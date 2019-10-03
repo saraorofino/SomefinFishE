@@ -15,6 +15,9 @@ For inspiration on how to organize the repo, check out:
 
 https://github.com/jcvdav/MPA_displacement
 
+This also feels relevant: 
+https://github.com/jcvdav/cooperatives 
+
 Each function is written on a different script, so that's definitely something to consider. 
 
 ```{r}
