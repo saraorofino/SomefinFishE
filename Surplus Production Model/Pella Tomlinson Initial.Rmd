@@ -1,0 +1,64 @@
+---
+title: "Pella Tomlinson Initial"
+author: "Sara Orofino"
+date: "10/7/2019"
+output: html_document
+---
+
+Packages:
+```{r packages, include=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(TMB)
+```
+
+
+Define the Pella Tomlinson (pt) Surplus Production Function:
+```{r inital_model}
+
+# Define the function
+pt <- function(B_t, r, K, p, C){
+  B_t <- B_t + (
+    ((r/p) * B_t) *
+      (1-((B_t/K) * exp(p)))
+    ) - C
+  return(B_t)
+}
+
+#Define initial parameters:
+r <- 0.05 #intrinsic growth rate
+K <- 10000 #carrying capacity (metric tons)
+p <- 0.2 #shape parameter 
+B0 <- 10000 #initial biomass (metric tons)
+B_t <- 10000 #at time 1 B_t = B0
+
+###Begin with catch = MSY
+msy <- function(r, K, p){
+  msy <- (r*K)/((p + 1)* exp((p + 1)/p))
+  return(msy)
+}
+
+```
+
+Try the equation:
+```{r}
+# Find msy:
+C <- msy(r=r, K=K, p=p)
+
+pt(B_t = B0, r = r, K = K, p = p, C = C)
+
+```
+
+Now add time loop:
+```{r}
+# Define timescale (t)
+tyears <- 50
+
+#Create a loop for pt model
+for(t in 2:tyears){
+  B_t[t] <- pt(B_t = B_t[t-1], r = r, K = K, p = p, C = C)
+}
+
+plot(B_t)
+
+```
+
