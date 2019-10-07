@@ -25,7 +25,7 @@ pt <- function(B_t, r, K, p, C){
 }
 
 #Define initial parameters:
-r <- 0.05 #intrinsic growth rate
+r <- 0.1 #intrinsic growth rate
 K <- 10000 #carrying capacity (metric tons)
 p <- 0.2 #shape parameter 
 B0 <- 10000 #initial biomass (metric tons)
@@ -44,6 +44,7 @@ Try the equation:
 # Find msy:
 C <- msy(r=r, K=K, p=p)
 
+# Use C=msy in the model with parameters defined above:
 pt(B_t = B0, r = r, K = K, p = p, C = C)
 
 ```
@@ -59,6 +60,7 @@ for(t in 2:tyears){
 }
 
 plot(B_t)
+plot(C)
 
 ```
 
