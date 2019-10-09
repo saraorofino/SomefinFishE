@@ -25,10 +25,18 @@ pt <- function(B_t, r, K, p, C){
 }
 
 #Define initial parameters:
-r <- 0.1 #intrinsic growth rate
+#Note these values of r are made up - not actually reflective of slow vs fast growing species; need to find this still
+r_slow<- 0.1 #intrinsic growth rate for slow-growing species()
+r_med <- 0.5 #intrinsic growth rate for medium-growing species ()
+r_fast <- 0.8 #intrinsic growth rate for fast-growing species ()
+
 K <- 10000 #carrying capacity (metric tons)
 p <- 0.2 #shape parameter 
-B0 <- 10000 #initial biomass (metric tons)
+
+B0_under <- 0.6*K #initial biomass (metric tons) if stock is under exploited (60% or more of unfished biomass)
+B0_full <- 0.5*K #initial biomass (metric tons) if stock is fully exploited (40-60% of unfished biomass)
+B0_over <- 0.4*K #initial biomass (metric tons) if stock is over exploited (40% or less of unfished biomass)
+
 B_t <- 10000 #at time 1 B_t = B0
 
 ###Begin with catch = MSY
