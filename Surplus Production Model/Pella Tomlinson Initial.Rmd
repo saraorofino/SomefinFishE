@@ -36,6 +36,7 @@ p <- 0.2 #shape parameter
 B0_under <- 0.6*K #initial biomass (metric tons) if stock is under exploited (60% or more of unfished biomass)
 B0_full <- 0.5*K #initial biomass (metric tons) if stock is fully exploited (40-60% of unfished biomass)
 B0_over <- 0.4*K #initial biomass (metric tons) if stock is over exploited (40% or less of unfished biomass)
+B0_open <- 0.1*K #initial biomass (metric tons) for open access fisheries 
 
 B_t <- 10000 #at time 1 B_t = B0
 

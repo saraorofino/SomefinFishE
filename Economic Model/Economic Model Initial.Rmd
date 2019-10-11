@@ -1,0 +1,18 @@
+---
+title: "Economic Model Initial"
+output: html_document
+---
+
+ Packages:
+```{r packages, warning=FALSE}
+library(tidyverse)
+```
+ 
+Goal: We want to optimize the present value of fisheries profits (prof) by altering the harvest rule (Y) subject to the constraints of the dynamic growth of the fishery.
+
+Using the fundamental equation of renewable resources (from Nat Resource Econ textbook), we can solve this optimization by solving for F'(B) in the following equation:
+
+$F'(B) + (partial~derivative~of~prof/B)/(partial~derivative~of~prof/Y) = discount~rate(disc)$
+
+Where:
+$F(B) = 
