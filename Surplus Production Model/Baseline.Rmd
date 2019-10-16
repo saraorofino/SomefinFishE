@@ -1,0 +1,8 @@
+---
+title: "Baseline"
+output: html_document
+---
+
+Baseline Model: No management and no climate change
+
+
