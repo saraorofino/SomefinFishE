@@ -16,11 +16,11 @@ Define the Pella Tomlinson (pt) Surplus Production Function:
 ```{r inital_model}
 
 # Define the function
-pt <- function(B_t, r, K, p, C){
+pt <- function(B_t, r, K, p, H){
   B_t <- B_t + (
     ((r/p) * B_t) *
       (1-((B_t/K) * exp(p)))
-    ) - C
+    ) - H
   return(B_t)
 }
 
@@ -51,10 +51,10 @@ msy <- function(r, K, p){
 Try the equation:
 ```{r}
 # Find msy:
-C <- msy(r=r, K=K, p=p)
+H <- msy(r=r_slow, K=K, p=p)
 
 # Use C=msy in the model with parameters defined above:
-pt(B_t = B0, r = r, K = K, p = p, C = C)
+pt(B_t = B0_open, r = r_slow, K = K, p = p, H = H)
 
 ```
 
@@ -65,11 +65,11 @@ tyears <- 50
 
 #Create a loop for pt model
 for(t in 2:tyears){
-  B_t[t] <- pt(B_t = B_t[t-1], r = r, K = K, p = p, C = C)
+  B_t[t] <- pt(B_t = B_t[t-1], r = r_slow, K = K, p = p, H = H)
 }
 
 plot(B_t)
-plot(C)
+plot(H)
 
 ```
 

@@ -41,10 +41,6 @@ F_oa <- function(r,p){
            )
 }
 
-harvest <- function(F_oa, B_t){
-  F_oa * B_t
-}
-
 ```
 
 
@@ -81,6 +77,10 @@ F_slow <- F_oa(r=r_slow, p=p)
 for(t in 2:tyears){
   B_t[t] <- pt(B_t = B_t[t-1], r = r_slow, K = K, p = p, H = F_slow*B_t[t-1])
 }
+
+plot(B_t)
+
+B_slow <- as.data.frame(B_t)
 
 #### Medium growing:
 #Find F_oa
