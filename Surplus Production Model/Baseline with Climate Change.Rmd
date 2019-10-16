@@ -1,10 +1,7 @@
 ---
-title: "Baseline"
+title: "Baseline with Climate Change"
 output: html_document
 ---
-
-Baseline Model: No management and no climate change
-
 
 Packages:
 ```{r packages, include=FALSE, message=FALSE, warning=FALSE}
@@ -51,6 +48,7 @@ Define parameters:
 r_slow<- 0.1 #intrinsic growth rate for slow-growing species()
 r_med <- 0.5 #intrinsic growth rate for medium-growing species ()
 r_fast <- 0.8 #intrinsic growth rate for fast-growing species ()
+r_change <- -0.001 #yearly projected change in growth rate due to climate change
 
 K <- 10000 #carrying capacity (metric tons)
 p <- 0.2 #shape parameter 
@@ -77,7 +75,7 @@ B_t <- B0_open
 
 #Looped pt model:
 for(t in 2:tyears){
-  B_t[t] <- pt(B_t = B_t[t-1], r = r_slow, K = K, p = p, H = F_slow*B_t[t-1])
+  B_t[t] <- pt(B_t = B_t[t-1], r = (r_slow + r_change*t), K = K, p = p, H = F_slow*B_t[t-1])
 }
 
 plot(B_t)
@@ -88,69 +86,9 @@ plot(B_t)
 time <- c(1:100)
 
 # create a data frame with time vector
-results_slow <- as.data.frame(time)
+results_cc_slow <- as.data.frame(time)
 
 # add model loop result vector to data frame
-results_slow$B_t <- B_t
+results_cc_slow$B_t <- B_t
 
 ```
-
-
-Time Loop (Medium):
-```{r medium}
-# Define timescale (t)
-tyears <- 100
-
-#Find F_oa
-F_med <- F_oa(r=r_med, p=p)
-
-#Reset B_t
-B_t <- B0_open
-
-#Looped pt model:
-for(t in 2:tyears){
-  B_t[t] <- pt(B_t = B_t[t-1], r = r_med, K = K, p = p, H = F_med*B_t[t-1])
-}
-
-plot(B_t)
-
-# save results in a data frame
-
-# create a data frame with time vector
-results_medium <- as.data.frame(time)
-
-# add model loop result vector to data frame
-results_medium$B_t <- B_t
-
-```
-
-
-Time Loop (Fast):
-```{r fast}
-# Define timescale (t)
-tyears <- 100
-
-#Find F_oa
-F_fast <- F_oa(r=r_fast, p=p)
-
-#Reset B_t
-B_t <- B0_open
-
-#Looped pt model:
-for(t in 2:tyears){
-  B_t[t] <- pt(B_t = B_t[t-1], r = r_fast, K = K, p = p, H = F_fast*B_t[t-1])
-}
-
-plot(B_t)
-
-# save results in a data frame
-
-# create a data frame with time vector
-results_fast <- as.data.frame(time)
-
-# add model loop result vector to data frame
-results_fast$B_t <- B_t
-```
-
-
-
