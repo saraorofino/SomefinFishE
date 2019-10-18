@@ -9,7 +9,6 @@ Baseline Model: No management and no climate change
 Packages:
 ```{r packages, include=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
-library(TMB)
 ```
 
 

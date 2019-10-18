@@ -68,7 +68,7 @@ Time Loop (Slow):
 tyears <- 100
 
 #Find F_oa
-F_slow <- F_oa(r=r_slow, p=p)
+F_slow <- F_oa(r=(r_slow + r_change*t), p=p)
 
 #Reset B_t
 B_t <- B0_open
