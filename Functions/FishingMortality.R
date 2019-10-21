@@ -17,3 +17,9 @@ F_oa2 <- function(g, phi){
     (0.3^phi) / (1 + phi)
   )
 } 
+
+
+#In steady state (from Costello et al 2016):
+f_t <- function(b, phi){
+  ((phi + 1) / phi) * (1 - ((b ^ phi) / (phi + 1)))
+}
