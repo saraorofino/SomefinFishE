@@ -19,7 +19,7 @@ Define the PT surplus production model:
 pt <- function(B_t, r, K, p, H){
   B_t <- B_t + (
     ((r/p) * B_t) *
-      (1-((B_t/K) * exp(p)))
+      (1-((B_t/K) ^ (p)))
     ) - H
   return(B_t)
 }
@@ -35,8 +35,8 @@ Define the amount of harvest equation (the H term of the pt model):
 ```{r mortality}
 F_oa <- function(r,p){
   (r/p) * (1-
-             ((0.3*exp(p))/
-                ((p+1)*exp(1+p)))
+             ((0.3 ^ (p))/
+                ((p+1) ^ (1+p)))
            )
 }
 
