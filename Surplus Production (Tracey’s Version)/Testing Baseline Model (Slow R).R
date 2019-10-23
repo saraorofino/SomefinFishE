@@ -5,7 +5,7 @@ library(TMB)
 
 #Define the surplus production function
 
-pt <- function(B_t, r, K, phi, g, H){
+pt <- function(B_t, K, phi, g, H){
   B_t <- B_t + 
     (((phi + 1) / phi) * g * B_t * (1 - ((B_t / K) ^ phi)))
     - H
@@ -49,7 +49,7 @@ B_t <- B0_open
 
 #Looped pt model:
 for(t in 2:tyears){
-  B_t[t] <- pt(B_t = B_t[t-1], r = r_slow, K = K, phi = phi, g = g, H = F_slow*B_t[t-1])
+  B_t[t] <- pt(B_t = B_t[t-1], K = K, phi = phi, g = g, H = F_slow*B_t[t-1])
 }
 
 plot(B_t)
