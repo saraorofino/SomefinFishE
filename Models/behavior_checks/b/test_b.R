@@ -44,7 +44,7 @@ test_b <- function(b, f, r, r_s, p, k, years){
 results_b = list() 
 
 for (i in 1:n_experiment){
-  results_b[[i]] <- test_b(b = experiment$b[i], f = 0.1, r = 0.2, r_s = 0.01, p = 0.2,
+  results_b[[i]] <- test_b(b = experiment$b[i], f = 0.1, r = 0.2, r_s = 0, p = 0.2,
                               years = 50, k = 1)
 }
 
@@ -54,13 +54,13 @@ for(i in 1:n_experiment){
   plot(results_b[[i]]$b)
 }
 
-#Save a copy of plots to look at later:
-pdf(file = "G:/Data Analysis/SomefinFishE/Models/behavior_checks/b/b_plots.pdf",
-    width = 4,
-    height = 4)
-
-for(i in 1:n_experiment){
-  plot(results_b[[i]]$b)
-}
-
-dev.off()
+# #Save a copy of plots to look at later:
+# pdf(file = "G:/Data Analysis/SomefinFishE/Models/behavior_checks/b/b_plots.pdf",
+#     width = 4,
+#     height = 4)
+# 
+# for(i in 1:n_experiment){
+#   plot(results_b[[i]]$b)
+# }
+# 
+# dev.off()

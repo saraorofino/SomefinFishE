@@ -56,15 +56,15 @@ for(i in 1:n_experiment){
 }
 
 #Save a copy of plots to look at later:
-pdf(file = "G:/Data Analysis/SomefinFishE/Models/behavior_checks/ks/b_plots.pdf",
-    width = 4,
-    height = 4)
-
-for(i in 1:n_experiment){
-  plot(results_ks[[i]]$b)
-}
-
-dev.off()
+# pdf(file = "G:/Data Analysis/SomefinFishE/Models/behavior_checks/ks/b_plots.pdf",
+#     width = 4,
+#     height = 4)
+# 
+# for(i in 1:n_experiment){
+#   plot(results_ks[[i]]$b)
+# }
+# 
+# dev.off()
 
 # Have a vector of starting k_s values to compare to the graphs
 library(tidyverse)

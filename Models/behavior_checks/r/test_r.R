@@ -44,7 +44,7 @@ test_r <- function(b, f, r, r_s, p, k, years){
 results_r = list() 
 
 for (i in 1:n_experiment){
-  results_r[[i]] <- test_r(b = 0.6, f = 0.1, r = experiment$r[i], r_s = 0.01, p = 0.2,
+  results_r[[i]] <- test_r(b = 0.6, f = 0.1, r = experiment$r[i], r_s = 0, p = 0.2,
                                 years = 50, k = 1)
 }
 
@@ -55,15 +55,15 @@ for(i in 1:n_experiment){
 }
 
 #Save a copy of plots to look at later:
-pdf(file = "G:/Data Analysis/SomefinFishE/Models/behavior_checks/r/b_plots.pdf",
-    width = 4,
-    height = 4)
-
-for(i in 1:n_experiment){
-  plot(results_r[[i]]$b)
-}
-
-dev.off()
+# pdf(file = "G:/Data Analysis/SomefinFishE/Models/behavior_checks/r/b_plots.pdf",
+#     width = 4,
+#     height = 4)
+# 
+# for(i in 1:n_experiment){
+#   plot(results_r[[i]]$b)
+# }
+# 
+# dev.off()
 
 # Have a vector of starting r values to compare to the graphs
 library(tidyverse)
