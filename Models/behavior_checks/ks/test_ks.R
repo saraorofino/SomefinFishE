@@ -7,8 +7,8 @@
 n_experiment = 10 
 
 experiment <- data.frame(
-  k_s = runif(n_experiment, min = 0, max = 2)) #Range shift per year
-#Range shift based on a low of no movement in 50 yrs and a high of 100% in 50 yrs or 2% per year
+  k_s = seq(-0.01, -0.001, 0.001)) #Range shift per year
+#Range shift based on a low of no movement in 100 yrs and a high of 100% in 100 yrs or 1% per year
 
 # Model:
 test_ks <- function(b, f, r, p, k, k_s, years){
@@ -21,19 +21,22 @@ test_ks <- function(b, f, r, p, k, k_s, years){
   
   results <- data.frame(
     b = rep(NA, years), c = rep(NA, years), 
-    year = 1:years, k = rep(NA, years)) #Setup the results dataframe where the outputs will be writen for however many years our experiment is running
+    year = 1:years, k = rep(NA, years),
+    k_s = rep(NA, years)) #Setup the results dataframe where the outputs will be writen for #years our experiment is running
   
   #Set the initial result for the outputs in year 1
   results$b[1] = b
   results$c[1] = f * b
   results$k[1] = k
+  results$k_s[1] = k_s
   
   #Loop the model over the specified number of years
   for (t in 2:years) {
     
-    results$b[t] = results$b[t-1] + (r / p) * results$b[t-1] * (1 - ((results$b[t-1]/results$k[t-1]) ^ p)) - results$c[t-1] #operating model - PT
-    results$k[t] = results$k[t-1] * (1 + k_s) #climate model - how does k change with climate change in each year
     results$c[t] = results$b[t-1] * f #define catch - won't need this if using the climate ready management below
+    results$b[t] = results$b[t-1] + (r / p) * results$b[t-1] * (1 - ((results$b[t-1]/results$k[t-1]) ^ p)) - results$c[t] #operating model-PT
+    results$k_s[t] = k_s*(t-1)
+    results$k[t] = results$k[1] * (1 + (k_s*(t-1))) #climate model - how does k change with climate change in each year
     
   } 
   
@@ -45,8 +48,8 @@ test_ks <- function(b, f, r, p, k, k_s, years){
 results_ks = list() 
 
 for (i in 1:n_experiment){
-  results_ks[[i]] <- test_ks(b = 0.6, f = 0.1, r = 0.2, p = 0.2, k_s = experiment$k_s[i],
-                             years = 50, k = 1)
+  results_ks[[i]] <- test_ks(b = 6000, f = 0.1, r = 0.2, p = 0.2, k_s = experiment$k_s[i],
+                             years = 50, k = 10000)
 }
 
 
@@ -56,7 +59,7 @@ for(i in 1:n_experiment){
 }
 
 #Save a copy of plots to look at later:
-# pdf(file = "G:/Data Analysis/SomefinFishE/Models/behavior_checks/ks/b_plots.pdf",
+# pdf(file = "/Users/saraorofino/Documents/GitHub/SomefinFishE/Models/behavior_checks/ks/b_plots.pdf",
 #     width = 4,
 #     height = 4)
 # 
