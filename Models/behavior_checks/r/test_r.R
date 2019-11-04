@@ -32,7 +32,7 @@ test_r <- function(b, f, r, r_s, p, k, years){
     
     results$c[t] = results$b[t-1] * f #define catch - won't need this if using the climate ready management below
     results$b[t] = results$b[t-1] + (results$r[t-1] / p) * results$b[t-1] * (1 - ((results$b[t-1]/k) ^ p)) - results$c[t] #operating model-PT
-    results$r[t] = results$r[t-1] * (1 + r_s) #climate model - how does r change with climate change in each year
+    results$r[t] = results$r[1] * (1 + (r_s*(t-1))) #climate model - how does r change with climate change in each year
     
   } 
   
