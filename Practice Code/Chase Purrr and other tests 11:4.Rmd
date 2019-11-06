@@ -86,7 +86,7 @@ plot(x = unlist(data$year), y = unlist(data$b), type = "l")
 
 ```{r}
 
-
+#Going to try purrr again
 
 
 ```
