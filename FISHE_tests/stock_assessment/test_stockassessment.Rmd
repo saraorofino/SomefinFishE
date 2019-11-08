@@ -11,12 +11,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-```{r packages}
+```{r packages, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(fishmethods)
 ```
-
-
 
 Test 1: Initial Stock Assessment
 Goal: Simulate error around estimates of intial biomass 
@@ -193,35 +191,70 @@ Use a wider range of error terms and systematically add in other variations: bio
 
 ###Test 5
 Varying biomass with a wider range of error terms
+
+First create the correct list of error terms to input in the model:
+```{r}
+#First try creating a dataframe with the sequences we want to repeat:
+input <- seq(0.1, 0.55, 0.05)
+
+#Create a list for the output
+error_input = data.frame(error = rep(NA, 100))
+
+#Loop the repetition of each input number
+for(i in 1:100){
+  if(i <= 10){
+   error_input$error[i] = input[1] 
+  } 
+  if(i > 10){
+    error_input$error[i] = input[2]
+  }
+  if(i > 20){
+    error_input$error[i] = input[3]
+  }
+  if(i>30){
+    error_input$error[i] = input[4]
+  }
+  if(i>40){
+    error_input$error[i] = input[5]
+  }
+  if(i>50){
+    error_input$error[i] = input[6]
+  }
+  if(i>60){
+    error_input$error[i] = input[7]
+  }
+  if(i>70){
+    error_input$error[i] = input[8]
+  }
+  if(i>80){
+    error_input$error[i] = input[9]
+  }
+  if(i>90){
+    error_input$error[i] = input[10]
+  }
+}
+
+#This works but it seems very inefficient - is there a better/faster way to get this result?
+```
+
+
+Run the experiment:
 ```{r test2}
 
 n_experiment = 100 
-input <- seq(0.1, 0.55, 0.05)
-
-
-# for(i in input){
-#   error_input[i] <- rep(input[i], 10)
-# }
-# We can't get the error term to repeat how we want it. Trying to get a sequence of 0.1 ten times, then 0.15 ten times etc. to apply each error over the full range of biomasses.
 
 #Input variables
 experiment <- list(
   b = rep(seq(1000, 10000, 1000), 10),
   r = rep(0.2, n_experiment),
   r_s = rep(0, n_experiment),
-  error = seq(0.1, 0.5, 0.05),
+  error = error_input$error,
   p = rep(0.2, n_experiment),
   k = rep(10000, n_experiment),
   years = rep(100, n_experiment))
 
 #Now apply to the function
-results_test4 <- pmap(experiment, sim_stockerror)
-
-#Plot results to see variation:
-for(i in 1:n_experiment){
-  plot(results_test4[[i]]$b)
-  plot(results_test4[[i]]$b_err)
-}
+results_test5 <- pmap(experiment, sim_stockerror)
 
 ```
 
