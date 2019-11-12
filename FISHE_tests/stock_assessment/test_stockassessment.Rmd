@@ -129,7 +129,7 @@ Results: About the same, regardless of initial biomass, with a 10% error biomass
 
 ###Test 3
 Standard deviation to 0.15
-```{r test2}
+```{r test3}
 
 n_experiment = 10 
 
@@ -158,7 +158,7 @@ Results: About the same, regardless of initial biomass, with a 15% error biomass
 
 ###Test 4
 Standard deviation to 0.2
-```{r test2}
+```{r test4}
 
 n_experiment = 10 
 
@@ -193,7 +193,7 @@ Use a wider range of error terms and systematically add in other variations: bio
 Varying biomass with a wider range of error terms
 
 First create the correct list of error terms to input in the model:
-```{r}
+```{r list-error}
 #First try creating a dataframe with the sequences we want to repeat:
 input <- seq(0.1, 0.55, 0.05)
 
@@ -239,7 +239,7 @@ for(i in 1:100){
 
 
 Run the experiment:
-```{r test2}
+```{r test5}
 
 n_experiment = 100 
 
