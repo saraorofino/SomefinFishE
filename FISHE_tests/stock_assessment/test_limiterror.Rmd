@@ -1,0 +1,210 @@
+---
+title: "test_limiterror"
+output: html_document
+---
+
+```{r setup, include=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(purrr)
+```
+
+#{.tabset}
+
+##Limiting Error
+
+Issue: In previous tests the error around the biomass term allowed for the selection of a biomass that led to catch being greater than the biomass + surplus production resulting in a negative biomass. 
+
+Goal: Limit the random selection of b_err so that biomass never drops below zero 
+
+Approach: use a repeat function that repeats the random draw if the previously drawn biomass makes catch greater than biomass + surplus production
+
+##Repeat Function Simple
+
+Goal: Write a repeat function that re-draws a random biomass if a certain condition is not met 
+
+Use a simplified version of the model where parameters are just specified at the beginning before the repeat loop
+```{r repeat-fun}
+#Specify the inputs in the repeat function:
+b <- 4000
+error <- 0.55
+r <- 0.2
+p <- 0.2
+k <- 10000
+
+#counter variable to keep track of how many "successes" are in the repeat function 
+x <- 1
+
+repeat({
+  
+  #First have to specify the action that will be repeated 
+  b_err = rnorm(1, mean = b, sd = (error*b)) 
+  
+  #Calculate the biomass condition
+  c = (r*(1/(1+p))) * b_err
+  b_con = b + (r / p)*b*(1 - ((b/k) ^ p))
+  
+  #Use b_err IF b_con > c
+  if(b_con > c){
+    results$b_err <- b_err
+    
+    #increase counter to keep track of if the condition is met
+    x<-x+1
+  }
+  
+  # #Break after one successful condition (because this is being repeated within each time step)
+  if(x>1){
+    break
+  }
+})
+
+```
+
+We might not need the counter variable. I think we can just put "break" below the results writing part which seems to work in this case but I want to check both ways in the time looped version. 
+
+##Repeat Function - Time Looped 
+
+Now we want to try and add this repeating loop inside the normal time looped function
+
+Add the time loop into the function:
+```{r repeat-timeloop}
+
+sim_stockerror <- function(b, r, r_s, error, p, k, years){
+  
+  results <- data.frame(
+    b = rep(NA, years), c = rep(NA, years), 
+    year = 1:years, r = rep(NA, years), b_err = rep(NA, years)) #Setup the results dataframe 
+  
+  #Set the initial result for the outputs in year 1
+   
+  results$b[1] = b
+  results$r[1] = r
+  
+  ##Insert a repeat function to ensure that the b_err term in year 1 won't make biomass negative in year 2
+x<-1 #counting variable
+repeat({
+  
+  #Specify the action that will be repeated 
+  b_err1 = rnorm(1, mean = results$b[1], sd = (error*results$b[1]))  
+  
+  #Calculate the biomass condition for YEAR 1
+  b_con1 = results$b[1] + (results$r[1] / p)*results$b[1]*(1 - ((results$b[1]/k) ^ p))
+  
+  #Use the estimated b_err as the result in the rest of the experiment if the condition is met
+  if(b_con1 > c[1]){
+    results$b_err[1] <- b_err1
+    
+    #increase counter if condition is met
+    x<-x+1}
+  
+  #stop the loop once the condition is met once
+  if(x>1){
+    break}
+})
+  
+  #Calculate catch in Year 1 based on the chosen b_err
+  results$c[1] = (r*(1/(1+p))) * results$b_err[1] #using f=Fmsy and b=estimate from initial stock assessment
+ 
+
+ #Loop the model over the specified number of years
+  for (t in 2:years) {
+    
+    ##Insert another repeat function to ensure that b_err in every time step won't make the biomass negative 
+z<-1 #new counting variable 
+repeat({
+  
+  #Specify the action that will be repeated 
+  b_err2 = rnorm(1, mean = results$b[t-1], sd = (error*results$b[t-1]))  
+  
+  #Calculate the biomass condition for year t
+  b_con2 = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))
+  #Calculate the theoretical catch based on the biomass with error drawn above
+  c_theoretical = (r*(1/(1+p))) * b_err2
+  
+  #Use the estimated b_err as the result in the rest of the experiment if the condition is met
+  if(b_con2 > c_theoretical){
+    results$b_err[t] <- b_err2
+    
+    #increase counter if condition is met
+    z<-z+1}
+  
+  #stop the loop once the condition is met once
+  if(z>1){
+    break}
+})
+  
+    #Calculate the rest of the results the same way but using the b_err estimate that was outputed from the repeat loop
+    results$c[t] = (r*(1/(1+p))) * results$b_err[t]
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t]
+    results$r[t] = results$r[1] * (1 + (r_s*(t-1))) 
+    
+   } 
+  
+  return(results)
+}
+
+```
+
+
+##Repeat Function Tests
+Test if it works on just a single set of values - choose high b, low r, and low error to start:
+```{r test1-repeat}
+
+test1_rep <- sim_stockerror(b=6000, r=0.2, r_s=0, k=1000, error=0.05, p=0.2, years=50)
+```
+That works - values make sense and drop to about b=400
+
+Try again with a single set of values but lower b, higher r, and higher error:
+```{r test2-repeat}
+
+test2_rep <- sim_stockerror(b=3000, r=0.6, r_s=0, k=1000, error=0.35, p=0.2, years=50)
+```
+That worked and biomass is down to below 400
+
+Try a third time with low b, high r, and high error:
+```{r test3-repeat}
+test3_rep <- sim_stockerror(b=1000, r=0.8, r_s=0, k=1000, error=0.55, p=0.2, years=50)
+```
+
+These all work and biomass stays above zero.  
+
+One thing to note: with really high error and low biomass it is possible to draw a negative b_err term. For example in test3 the error is set to 0.55 and once the biomass got down to ~275 a negative b_err was drawn (-62.299). The standard deviation of the distribution is based on error*b[t-1] so in this case the sd for that draw was ~151. 99% of data falls within 3 sds of the mean but that means that the range its selecting from is basically -178 to 728.
+
+
+This happened three times in test3 out of the 50 repetitions. In these cases the catch term is negative which means biomass actually increases that year because - (-c) would add the catch. I think we can address this by using the truncnorm() function instead of rnorm() which can truncate the distribution to have a lower bound of zero. I think we should probably talk this over with someone to be sure that this counts as a sound assumption. The only other option I can think of is repeating the draw process if the result comes back negative but adding a bunch of repeat functions would slow down the code.    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
