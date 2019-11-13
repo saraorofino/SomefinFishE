@@ -13,7 +13,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r packages, message=FALSE, warning=FALSE}
 library(tidyverse)
+<<<<<<< HEAD
 #library(fishmethods)
+=======
+>>>>>>> e39bf25c59cba56a453798669eb224ec741eec47
 ```
 
 ##Fmsy Equation
