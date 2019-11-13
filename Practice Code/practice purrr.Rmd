@@ -19,3 +19,130 @@ library(repurrrsive)
 
 ```
 
+Here's a random and totally made up thing to test purrr with cross:
+```{r basic_purrr}
+
+#Create three lists:
+x <- list(1,10,100)
+y <- list(1,2,3)
+z <- list(5,50,500)
+
+#Create a master list 
+data <- list(
+  x = x,
+  y = y,
+  z = z
+)
+
+test <- function(x,y,z){
+  result <- x+y+z
+}
+
+test_cross <- data %>%
+  cross() 
+
+results_test2 <- list()
+
+for(i in 1:27){
+  results_test2[i] <- test(x = test_cross[[i]]$x, y = test_cross[[i]]$y, z = test_cross[[i]]$z)
+}
+
+```
+Unsure how to use this with purrr but it works if you loop over the crossed dataframe.
+
+
+Test with a simple version of our model:
+```{r model-function}
+
+sim_fishery <- function(b, f, r, r_s, p, k, years){
+
+  results <- data.frame(
+    b = rep(NA, years), c = rep(NA, years), 
+    year = 1:years, r = rep(NA, years), r_s = rep(NA, years), f = rep(NA, years)) #Setup the results dataframe where the outputs will be writen for however many years our experiment is running
+  
+  #Set the initial result for the outputs in year 1
+  results$b[1] = b
+  results$c[1] = f * b
+  results$r[1] = r
+  results$r_s[1] = r_s
+  results$f[1] = f
+  
+  #Loop the model over the specified number of years
+  for (t in 2:years) {
+    
+    results$c[t] = results$b[t-1] * f #define catch
+    results$b[t] = results$b[t-1] + ((results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k)
+                                                                              ^ p)))-results$c[t] #pt model
+    results$r[t] = results$r[1] * (1 + (r_s*(t-1))) #climate model
+    results$r_s[t] = r_s
+    results$f[t] = f
+   } 
+  
+  return(results)
+}
+
+
+
+
+```
+
+
+Set up the initial lists and use cross to create a master list of experiments:
+```{r set-up}
+
+# Starting really simple first - create a list of 3 numbers for each of the inputs in the model:
+b <- list(1000, 5000, 10000)
+r <- list(0.015, 0.80, 1.15)
+r_s <- list(-0.015, 0, 0.02)
+f <- list(0.1, 0.3, 0.6)
+# I want to hold p, k, and years constant but not repeat combinations 
+p <- 0.2
+k <- 10000
+years <- 50
+
+inputs <- list(
+  b=b,
+  r=r,
+  r_s=r_s,
+  f=f,
+  p=p,
+  k=k,
+  years=years
+)
+
+input_cross <- inputs %>% 
+  cross()
+```
+
+Great - that looks like what we want!!!
+
+Now we need to loop the function over the master list
+```{r loop-test1}
+
+
+
+for(i in 1:81){
+  results[[i]] <- sim_fishery(b=input_cross[[i]]$b, r=input_cross[[i]]$r, r_s=input_cross[[i]]$r_s,
+                            f=input_cross[[i]]$f, p=input_cross[[i]]$p, k=input_cross[[i]]$k,
+                            years=input_cross[[i]]$years)
+}
+
+
+```
+
+
+WOW THIS WORKS!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
