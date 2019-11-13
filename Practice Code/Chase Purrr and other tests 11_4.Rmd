@@ -4,8 +4,10 @@ author: "Chase Brewster"
 date: "11/4/2019"
 output: html_document
 ---
+#{.tabset}
 
-```{r setup, include=FALSE}
+##Packages
+```{r setup, message=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
 library(purrr)
@@ -13,9 +15,10 @@ library(repurrrsive)
 library(tidyverse)
 ```
 
-```{r}
-# Operating model - this is our basic core model
-## Initial version created 10/28 with help from Dan
+##Model
+
+The basic code for our core model:
+```{r model}
 
 ##############################
 # Step 1- Create df of experiments to run through the model
@@ -29,6 +32,7 @@ experiment <- data.frame(
   r_s = runif(n_experiment, min = -0.015, max = 0.02),
   f = runif(n_experiment, min = .1, max = .6))
  # Here we are specifying the range for all the inputs we are varying in this model run
+
 ##############################
 # Step 2 - define the simulation model
 
@@ -36,7 +40,7 @@ sim_fishery <- function(b, f, r, r_s, p, k, years){
 
   results <- data.frame(
     b = rep(NA, years), c = rep(NA, years), 
-    year = 1:years, r = rep(NA, years), r_s = rep(NA, years), f = rep(NA, years)) #Setup the results dataframe where the outputs will be writen for however many years our experiment is running
+    year = 1:years, r = rep(NA, years), r_s = rep(NA, years), f = rep(NA, years)) #Setup the results dataframe
   
   #Set the initial result for the outputs in year 1
   results$b[1] = b
@@ -48,9 +52,10 @@ sim_fishery <- function(b, f, r, r_s, p, k, years){
   #Loop the model over the specified number of years
   for (t in 2:years) {
     
-    results$c[t] = results$b[t-1] * f #define catch - won't need this if using the climate ready management below
-    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t]#operating model-PT
-    results$r[t] = results$r[1] * (1 + (r_s*(t-1))) #climate model - how does r change with climate change in each year
+    results$c[t] = results$b[t-1] * f #define catch 
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*
+      (1 - ((results$b[t-1]/k) ^ p))-results$c[t] #operating model-PT
+    results$r[t] = results$r[1] * (1 + (r_s*(t-1))) #climate model 
     results$r_s[t] = r_s
     results$f[t] = f
    } 
@@ -58,6 +63,7 @@ sim_fishery <- function(b, f, r, r_s, p, k, years){
   return(results)
 }
 
+##############################
 # Step 3 - Run the model for the experiments 
 
 results = list() #we want the results to be outputted as a list
@@ -69,6 +75,13 @@ for (i in 1:n_experiment){
 }
 #Note if you're getting a data has more rows type error you forgot to run the results = list() command first 
 
+
+
+```
+
+Experiments with extracting listed outputs:
+```{r unlist-outputs}
+##Experiment with extracting the listed outputs
 data <- data.frame(b_0 = experiment$b, r_0 = experiment$r, r_s = experiment$r_s, f = experiment$f) 
 
 for(i in 1:100){
@@ -80,8 +93,9 @@ for(i in 1:100){
 plot(x = unlist(data$year), y = unlist(data$b), type = "l")
 
 
-
 ```
+
+##Try Purrr
 
 Experiment with using purrr:
 Here's a random and totally made up thing to test how purrr works:
@@ -105,6 +119,7 @@ pmap(l, function(c,b,a) a / (b + c)) #this works too and gives the exact same an
 # This matching arguments by name seems to be most like what we would need to do 
 ```
 
+##Simple Purrr 
 
 Okay now I want to try this with our data:
 
@@ -165,7 +180,7 @@ test_results <- pmap(l, sim_fishery)
 # This appears to have worked...
 
 ```
-
+##Purrr Test 2
 
 Okay the simple version appeared to work so I'm going to try a more complicated version of our model with purrr:
 ```{r test_purrr2}
@@ -216,9 +231,9 @@ All experiments have the same issue where the ratio of b/k ^ p is greater than o
 
 OKAYYYYYYYYY - its because I set the upper limit of biomass to be 100,000 instead of 10,000 ....
 
+##Purrr Test 3
 
 Try again now that I fixed it!
-
 ```{r test_purrr3}
 
 n_experiment = 10 #Number of experiments we are running
@@ -232,11 +247,12 @@ experiment <- list(
   k = rep(10000, n_experiment),
   years = rep(50, n_experiment))
 
-test_results3 <- pmap(experiment, sim_fishery)
+test_results3 <- pmap(experiment, sim_fishery) #map the sim_fishery function over the experiment list
 ```
 
 OKAY THAT TIME IT WORKED!!!!!!
 
+##Graphing with Purrr
 Quick trial of how to graph one of these experiments:
 ```{r graph_trial}
 

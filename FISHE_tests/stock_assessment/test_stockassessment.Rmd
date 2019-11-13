@@ -2,10 +2,10 @@
 title: "test_stockassessment"
 output: html_document
 ---
-```{r}
 
-```
+#{.tabset}
 
+##Setup
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -16,18 +16,25 @@ library(tidyverse)
 library(fishmethods)
 ```
 
-Test 1: Initial Stock Assessment
-Goal: Simulate error around estimates of intial biomass 
+##Fmsy Equation
 
 Test the Fmsy equation:
 Fmsy = r * (1 / (1+p)) - from the catchmsy function in R
-```{r}
+```{r fmsy}
 
 fmsy = 0.2 * (1/(1+0.2))
 
 ```
 
-Write the function to include error in the biomass estimates
+
+##Goals and Model
+
+Initial Stock Assessment Test
+Goal: Simulate error around estimates of intial biomass 
+
+Write the function to include error in the biomass estimates. In this experiment the b_err term represents the estimated biomass with error. The biomass is randomly selected from a distribution where the mean is the actual biomass from the model and the standard deviation is 5% of the actual biomass from the model. 
+
+The basic function that we'll use in the rest of these tests:
 ```{r write_function}
 #Write the function
 sim_stockerror <- function(b, r, r_s, error, p, k, years){
@@ -39,7 +46,7 @@ sim_stockerror <- function(b, r, r_s, error, p, k, years){
   #Set the initial result for the outputs in year 1
    
   results$b[1] = b
-  results$b_err[1] = rnorm(1, mean = results$b[1], sd = (error*results$b[1]))
+  results$b_err[1] = rnorm(1, mean = results$b[1], sd = (error*results$b[1])) #simulate error in assessment
   results$c[1] = (r*(1/(1+p))) * results$b_err[1] #using f=Fmsy and b=estimate from initial stock assessment
   results$r[1] = r
   
@@ -65,11 +72,11 @@ plot(results$year, results$b)
 plot(results$year, results$b_err)
 ```
 
-##Tests1-4
-Apply the new function to a set of experiments that vary actual initial biomass, where catch is responding to underlying changes in actual biomass but with some error
+##Goals Tests 1-4
+Apply the new function to a set of experiments that vary actual initial biomass. In these experiments catch is responding to underlying changes in actual biomass but with some error.
  - Each test will change only the standard deviation associated with the error term
 
-###Test 1
+##Test 1
 Standard deviation = 0.05
 ```{r test1}
 
@@ -98,7 +105,7 @@ for(i in 1:n_experiment){
 ```
 Results: Looks like regardless of initial biomass, with a error of only 5% biomass stays around Bmsy for all 100 years 
 
-###Test 2
+##Test 2
 Standard deviation to 0.10
 ```{r test2}
 
@@ -127,7 +134,7 @@ for(i in 1:n_experiment){
 ```
 Results: About the same, regardless of initial biomass, with a 10% error biomass stays around Bmsy for all 100 years
 
-###Test 3
+##Test 3
 Standard deviation to 0.15
 ```{r test3}
 
@@ -156,7 +163,7 @@ for(i in 1:n_experiment){
 ```
 Results: About the same, regardless of initial biomass, with a 15% error biomass stays around Bmsy for all 100 years
 
-###Test 4
+##Test 4
 Standard deviation to 0.2
 ```{r test4}
 
@@ -186,10 +193,10 @@ for(i in 1:n_experiment){
 Results: About the same, regardless of initial biomass, with a 20% error biomass stays around Bmsy for all 100 years
 
 
-##Tests 5-7 
+##Goals Tests 5-7 
 Use a wider range of error terms and systematically add in other variations: biomass, r, and r_s
 
-###Test 5
+##Test 5
 Varying biomass with a wider range of error terms
 
 First create the correct list of error terms to input in the model:

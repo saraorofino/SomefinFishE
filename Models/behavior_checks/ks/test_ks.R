@@ -12,17 +12,12 @@ experiment <- data.frame(
 
 # Model:
 test_ks <- function(b, f, r, p, k, k_s, years){
-  # b = 1
-  # f = 1.5
-  # g = 0.2
-  # g_s = -0.01
-  # phi = 0.188
-  # years = 50   Note: these values were to help setup the initial model and ensure it ran properly - we don't need these anymore
+
   
   results <- data.frame(
     b = rep(NA, years), c = rep(NA, years), 
     year = 1:years, k = rep(NA, years),
-    k_s = rep(NA, years)) #Setup the results dataframe where the outputs will be writen for #years our experiment is running
+    k_s = rep(NA, years)) #Setup the results dataframe 
   
   #Set the initial result for the outputs in year 1
   results$b[1] = b
@@ -33,10 +28,11 @@ test_ks <- function(b, f, r, p, k, k_s, years){
   #Loop the model over the specified number of years
   for (t in 2:years) {
     
-    results$c[t] = results$b[t-1] * f #define catch - won't need this if using the climate ready management below
-    results$b[t] = results$b[t-1] + (r / p) * results$b[t-1] * (1 - ((results$b[t-1]/results$k[t-1]) ^ p)) - results$c[t] #operating model-PT
+    results$c[t] = results$b[t-1] * f #define catch 
+    results$b[t] = results$b[t-1] + (r / p) * results$b[t-1] * 
+      (1 - ((results$b[t-1]/results$k[t-1]) ^ p)) - results$c[t] #operating model-PT
     results$k_s[t] = k_s*(t-1)
-    results$k[t] = results$k[1] * (1 + (k_s*(t-1))) #climate model - how does k change with climate change in each year
+    results$k[t] = results$k[1] * (1 + (k_s*(t-1))) #climate model 
     
   } 
   
