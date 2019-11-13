@@ -1,0 +1,134 @@
+---
+title: "stockassessment_error_oa_rs"
+author: "Chase"
+date: "11/13/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The goal of this test is to examine a range of error magnitude over a range of initial biomasses and growth rates, with fishing mortality set at a dynamic open access
+
+
+```{r packages}
+library(tidyverse)
+```
+
+
+##Foa Equation
+
+Test the Foa equation:
+Foa = (r/p) * (1-
+             ((0.3 ^ (p))/
+                ((p+1) ^ (1+p)))
+           ) - from Sara's algebra, could be right could be wrong?
+           
+Result Foa for r = .2 and p = .2 is .3684 - seems very plausible, we can check this by observing where fisheries that don't collapse even out. If it is around 10-15% of carrying capacity (10,000), than this should be right (note - when tested before in stockassessment_error_oa, this resulted in a equilibrium around 1000, so it seems right)
+
+Foa for r = .4 is .736 - again, seems plausible?
+```{r fmsy}
+
+foa = (.8/.2) * (1-
+             ((0.3 ^ (.2))/
+                ((.2+1) ^ (1+.2)))
+           )
+
+```
+
+##Function
+The basic function that we'll use in the rest of these tests
+There is no "F" variable - instead, it is the Foa equation above
+```{r write_function}
+#Write the function
+sim_stockerror_oa_r <- function(b, r, r_s, error, p, k, years){
+  
+  results <- data.frame(
+    b = rep(NA, years), c = rep(NA, years), 
+    year = 1:years, r = rep(NA, years), b_err = rep(NA, years), error = rep(NA, years)) #Setup the results dataframe 
+  
+  #Set the initial result for the outputs in year 1
+   
+  results$b[1] = b
+  results$b_err[1] = rnorm(1, mean = results$b[1], sd = (error*results$b[1])) #simulate error in assessment
+  results$c[1] = ((r/p) * (1- ((0.3 ^ (p)) / ((p+1) ^ (1+p))))) * results$b_err[1] #using f=Foa and b=estimate from initial stock assessment
+  results$r[1] = r
+  results$error[1] = error
+  
+  #Loop the model over the specified number of years
+  for (t in 2:years) {
+    
+    results$b_err[t] = rnorm(1, mean = results$b[t-1], sd = (error*results$b[t-1]))
+    results$c[t] = ((r/p) * (1- ((0.3 ^ (p)) / ((p+1) ^ (1+p))))) * results$b_err[t]
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p)) - results$c[t]
+    results$r[t] = results$r[1] * (1 + (r_s*(t-1)))
+    results$error[t] = results$error
+   } 
+  
+  return(results)
+}
+
+results <- list()
+```
+
+##Stock Assessment
+Create experiment lists
+```{r create_cross_list}
+# create a master list of input variables to feed into the cross() function
+
+error_oa_r_experiment <- list(
+  b = seq(1000, 6000, 1000),
+  r = seq(.1, .8, .05), # sequence of r's
+  r_s = 0,
+  error = seq(0.05, 0.55, 0.05), 
+  p = 0.2,
+  k = 10000,
+  years = 100
+)
+
+eoare_cross <- error_oa_r_experiment %>% 
+  cross()
+
+# crossed lists to make 990 experiments
+```
+
+run the function
+```{r run_function}
+
+for(i in 1:990){
+  results[[i]] <- sim_stockerror_oa_r(b=eoare_cross[[i]]$b, r=eoare_cross[[i]]$r,
+                              r_s=eoare_cross[[i]]$r_s, p=eoare_cross[[i]]$p, 
+                              k=eoare_cross[[i]]$k,years=eoare_cross[[i]]$years, error = eoare_cross[[i]]$error)
+}
+
+rapply( results, f=function(x) ifelse(is.nan(x),0,x), how="replace" ) # replace NAN values with 0
+ 
+#plot the results
+
+for(i in 631:720){
+  plot(results[[i]]$b)
+}
+
+```
+
+The above experiments run every R over every starting biomass, and those are crossed over each error range.
+So,
+results 1 - 90 are: biomass 1000 - 6000 (6) x growth rate .1 - .8 (15) @ error of 0.05 (90)
+results 91 - 180 are: biomass 1000 - 6000 (6) x growth rate .1 - .8 (15) @ error of 0.1 (90) 
+
+etc.
+
+For the low error (0.05 - 0.15), the fisheries equilibriate around 1,000. For high r's (.7, .8) and high initial biomass (6000, 5000), the fishery often collapses in the first year (which makes sense given the equation - fishing mortality is high when there is a high r, and a high initial biomass with error x that high fishing mortality results in catching more than exists) - this wouldn't happen in real life, so might be something worth thinking about
+
+when the error term reaches .2, we start to see some fisheries collapsing later on (after 40 years, for example, in resutlts[[343]]) - this is still with a high r value (.7). It looks like, with a high r value, that the fishing mortality rate is also high because of the open access equation. These results would look different with a fixed fishing mortality rate across r's. However, the high growth rate means the stock recovers faster, so it would make sense that in the real world without management the fishing mortality rate would be higher with a faster growing species. Not necessarily a troubling result, but something to think through.
+
+When error reaches .25, the same behavior of high initial stock and high growth rate collapses some fisheries immediately. Results [[449 and 450]] both don't collapse immediately, but once they are down around open access (b = 1000) the high error and fishing morality collapse the fishery after 20-30 years, probably result of an unlucky biomass_error draw. The rest at .25 error are not collapsing, but many come very, very close at medium to high r's
+
+error at .3, crash becomes very common with r = .5 and above
+
+error at .35, crash almost ubiquitous for high r's, and observed down to r = .45
+
+Overall, looks like building in error and, if we are accurately testing error around stock assessments, that error is more of a concern when you have a fast growing species
+
+
