@@ -4,7 +4,7 @@ author: "Chase"
 date: "11/13/2019"
 output: html_document
 ---
-
+#{.tabset}
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
