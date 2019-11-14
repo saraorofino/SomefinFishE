@@ -1,0 +1,63 @@
+---
+title: "test_hcr"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#{.tabset}
+
+##Basic HCR Outine
+
+Goal: to create an outline code for what a HCR decision tree would look like
+
+Test 1:
+
+Target: f/fmsy < 1
+Limit: f/fmsy > 2
+
+HCRs based on the ratio of f/fmsy (f_ratio)
+f_ratio > 2 -- close the fishery (this would make f = 0) for ease of assumptions right now this would make f=0 for the rest of the simulation
+
+1 < f_ratio < 2 -- lower fishing mortality rate by 10%
+
+f_ratio = 1 -- no change to f
+
+f_ratio < 1 -- increase fishing mortality by 5%
+
+Note: the ratio is taken from FISHE but the percent increase and decrease is made up
+
+
+For the simple version I will just use a list of f_ratios that can be fed through the function to see if the decision was made that we expect.
+```{r hcr-decision}
+
+#Parameters:
+f_ratio <- list(0.5, 1.0, 1.5, 1.75, 2)
+
+#Track results:
+result_hcr <- list()
+
+#Set up the HCR decision tree and test for the five values in the f_ratio list:
+for(i in 1:5){
+ if(f_ratio[[i]] >= 2){
+   result_hcr[[i]] = 0 #if ratio is above 2 record a zero in the results list
+ }
+ if(f_ratio[[i]] > 1 & f_ratio[[i]] < 2){
+    result_hcr[[i]] = 0.90 #if ratio is between target and limit record 0.90 (reduction of 10% is same as keeping 90%)
+  }   
+ if(f_ratio[[i]] == 1){
+   result_hcr[[i]] = 1
+ }   
+ if(f_ratio[[i]] < 1){
+     result_hcr[[i]] = 0.05 #record 0.05 (5% increase) if the ratio is below the target
+   }   
+}
+
+
+
+```
+This works. If we were to put it into our actual model code then we would have to adjust the outcomes of the if statements - these would instead be different equations used to calculate f at the current time step based on the ratios. Also need to caculate the ratio in each time step. 
+
+
