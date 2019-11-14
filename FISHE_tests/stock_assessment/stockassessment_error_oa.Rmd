@@ -56,10 +56,11 @@ sim_stockerror_oa <- function(b, r, r_s, error, p, k, years){
   #Loop the model over the specified number of years
   for (t in 2:years) {
     
-    results$b_err[t] = rnorm(1, mean = results$b[t-1], sd = (error*results$b[t-1]))
-    results$c[t] = ((r/p) * (1- ((0.3 ^ (p)) / ((p+1) ^ (1+p))))) * results$b_err[t]
-    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p)) - results$c[t]
     results$r[t] = results$r[1] * (1 + (r_s*(t-1))) 
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p)) - results$c[t-1]
+    results$b_err[t] = rnorm(1, mean = results$b[t], sd = (error*results$b[t]))
+    results$c[t] = ((r/p) * (1- ((0.3 ^ (p)) / ((p+1) ^ (1+p))))) * results$b_err[t]
+    
     
    } 
   
@@ -101,7 +102,75 @@ for(i in 1:110){
 
 #plot the results
 
-for(i in 1:110){
-  plot(results[[i]]$b)
-}
+#for(i in 1:110){
+ # plot(results[[i]]$b)
+#}
 ```
+
+
+can we export the results as a csv?
+```{r}
+
+lapply(results, function(x) write.table(data.frame(x), 'results9.csv', sep = ' , '))
+# creates a csv but only provides the last list (results[[110]])
+
+lapply(results[[i]], function(x) write.table(data.frame(x), 'results2.csv', sep = ' , '))
+# creats a csv but only provides b_err 
+
+# trying something with json and purr that i saw online
+library(jsonlite)
+library(data.table)
+library(purrr)
+
+# didnt work at all so i deleted
+
+# looping back to the lapply function that worked above but only gave the last list
+# maybe if we loop it through the lists it will work
+
+for(i in 1:110){
+  lapply(results, function(x) write.table(data.frame(x), 'results6.csv', sep = ' , '))
+}
+
+#doesn't work
+
+cross_df <- as.data.frame(matrix(unlist(eoae_cross), nrow = length(unlist(eoae_cross[110]))))
+        
+results_df <- as.data.frame(matrix(unlist(results), nrow = length(unlist(results[110]))))
+
+all_df <- rbind(cross_df, results_df)
+
+# holy shit this is working
+
+# the as.data.frame(matrix) function is creating a data frame out of the lists that the cross() function creates. Each experiment is given it's own column, so there are 110 columns. the rows are each of the variables going into the function. 
+
+# same for the the results df, each column is an experiment and the rows going down are biomass year after year
+
+#It would be awesome to swap this, so each row is a an experiment with the first 7 columns being the input variables, and then 100 more columns would represent each year of biomass. Haven't tried to extract anything other than biomass yet. maybe it would be unlist(results$c) or something.
+
+# tried using "ncol = " to switch this around but it didnt work
+
+# now going to try transposing
+
+all_df_t <- data.frame(t(all_df))
+
+# damn that worked
+# no column names though, but there might be a way to do that
+
+# tried adding row names above to the original data frames but didn't work
+# maybe we can transpose the original data frames, add col names, and then combine
+
+cross_df_t <- data.frame(t(cross_df))
+
+for (i in seq_along(cross_df_t)){
+  colnames(cross_df_t[[i]]) <- eoae_cross$Name
+}
+
+# doesn't seem to be working right now, will try again some other time
+
+# for now, going to export the full data frame into a csv
+library(here)
+
+write.csv(all_df_t, "G:/Data Analysis/SomefinFishE/FISHE_tests/stock_assessment/eoae_df.csv", row.names = FALSE)
+
+```
+
