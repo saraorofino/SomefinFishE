@@ -12,3 +12,19 @@ library(tidyverse)
 library(purrr)
 ```
 
+#{.tabset}
+
+##Test f Eqn
+```{r test-f}
+
+
+
+```
+
+##Test Time Intervals 
+```{r time-int}
+
+
+
+```
+
