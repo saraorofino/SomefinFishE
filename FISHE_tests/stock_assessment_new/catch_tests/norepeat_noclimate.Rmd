@@ -162,7 +162,7 @@ norep_df <- rbind(input_norep_df, results_norep_df)
 
 norep_df_final <- data.frame(t(norep_df))
 
-write.csv(all_df_t, "G:/Data Analysis/SomefinFishE/FISHE_tests/stock_assessment_new/catch_tests/csv_results/norep_noclim.csv", row.names = FALSE)
+write.csv(norep_df_final, "G:/Data Analysis/SomefinFishE/FISHE_tests/stock_assessment_new/catch_tests/csv_results/norep_noclim.csv", row.names = FALSE)
 
 #plot the results
 

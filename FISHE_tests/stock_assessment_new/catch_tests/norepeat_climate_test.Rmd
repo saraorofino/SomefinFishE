@@ -160,7 +160,7 @@ norep_clim_test_df <- rbind(input_norep_clim_test_df, results_norep_clim_test_df
 
 norep_clim_test_df_final <- data.frame(t(norep_clim_test_df))
 
-write.csv(all_df_t, "G:/Data Analysis/SomefinFishE/FISHE_tests/stock_assessment_new/catch_tests/csv_results/norep_clim_test.csv", row.names = FALSE)
+write.csv(norep_clim_test_df_final, "G:/Data Analysis/SomefinFishE/FISHE_tests/stock_assessment_new/catch_tests/csv_results/norep_clim_test.csv", row.names = FALSE)
 
 #plot the results
 
@@ -169,3 +169,5 @@ for(i in 1:110){
 }
 
 ```
+
+
