@@ -7,6 +7,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(purrr)
+library(tidyr)
 ```
 
 
@@ -45,7 +46,8 @@ sim_norep <- function(b, r, r_s, error, p, k, years){
   results$c[1] = results$f[1] * results$b[1] #using f based on initial biomass and actual initial biomass
   
   fmsy <-function(r,p){r * (1 / (1+p))} #set up the function to calculate Fmsy based on growth (r) and shape parameter (p)
-  f_msy <- fmsy(r=results$r[1], p=p) #calculate fmsy in year 1
+  r_calc1 <- results$r[1]
+  f_msy <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1
   f_err = (results$r[1] / p) * (1 - ((results$b_err[1] / k) ^ p)) #calculate the f the fishery thinks it has from their initial stock assessment with error
   results$f_ratio[1] = f_err/f_msy #calculate the f_ratio using the f_err and fmsy 
   
@@ -59,8 +61,8 @@ sim_norep <- function(b, r, r_s, error, p, k, years){
     
     ##HCR decision will change how f is calculated - this step must come before calculating c 
     # Calculate fmsy in time t from current r 
-    r_calc <- results$r[t]
-    f_msy[t] <- fmsy(r=r_calc, p=p)
+    r_calc2 <- results$r[t]
+    f_msy[t] <- fmsy(r=r_calc2, p=p)
     
     #Decisions for f this year based on the ratio calucated this year 
     if(results$f_ratio[t-1] >= 2){
@@ -86,7 +88,7 @@ sim_norep <- function(b, r, r_s, error, p, k, years){
   if(results$year[t] != 2){
     results$r[t] = results$r[1] * (1 + (r_s*(t-1)))
     results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
-    results$f[t] = results$f[t-1]
+    results$f[t] = results$f[2]
     results$c[t] = results$f[t] * results$b[t]
     results$b_err[t] = 0
     results$f_ratio[t] = 0
@@ -170,6 +172,28 @@ for(i in 1:110){
  plot(results[[i]]$b)
 }
 
+
+```
+
+Trying saving in long format:
+```{r save2}
+#Dataframe of the inputs for each experiment:
+input_norep_df <- as.data.frame(matrix(unlist(input_norep), nrow = length(unlist(input_norep[110]))))
+
+#want to change the scientific notation on one column so I know what we're working with:
+input_norep_df[1:110] <-format(input_norep_df[1:110], scientific = FALSE)
+
+#In this format each column is a single experiment input in this order - b, r, r_s, error, p, k, years
+id <- c("b", "r", "r_s", "error", "p", "k", "years") #create a character vector of ids and put them in as row names
+
+row.names(input_norep_df) <- id #add the id as row names
+colnames(input_norep_df)[1:110] <-gsub('[V]', "exp", colnames(input_norep_df)[1:110]) #add exp to the column headings instead of V
+
+input_edit <- data.frame(t(input_norep_df)) %>% 
+  mutate(id = row.names(input_edit))
+
+#This is a lengthy code but it gives a long dataframe with column names and an added row with an experiment identifier
+## I think if we repeat this for the results and then merge them we might be able to tranpose it back into long format
 
 ```
 
