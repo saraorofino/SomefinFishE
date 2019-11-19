@@ -5,10 +5,11 @@ output: html_document
 
 #{.tabset}
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
+library(purrr)
 ```
 
 ##Test Time Interval
@@ -40,6 +41,7 @@ for(i in 1:100){
 
 ```
 
+##Test2
 
 Write a vector of assessment times and then loop it through the code:
 ```{r test2-int}
@@ -73,6 +75,8 @@ for(i in 1:length(int_test$t)){
 }
 
 ```
+
+##Update Model
 
 Now try it with our model:
 ```{r int-model}
@@ -149,10 +153,48 @@ sim_int <- function(b, r, r_s, f, error, p, k, years){
 
 ```
 
+##Simple Model Test
+
 Test over a single set of inputs:
 ```{r test-int-model}
 
 basic_result <- sim_int(b=6000, r=0.2, r_s=0, f=0.3, error=0.10, p=0.2, k=10000, years=100)
+
+```
+
+##List Model Test
+Inputs:
+```{r input-list}
+
+#Design experiments
+list_int <- list(
+  b = seq(1000, 10000, 1000),
+  r = 0.2,
+  r_s = 0,
+  f = 0.10,
+  error = seq(0.05, 0.55, 0.05),
+  p = 0.2,
+  k = 10000,
+  years = 100
+)
+
+input_int <- list_int %>% 
+  cross()
+
+
+```
+
+Run model:
+```{r run-model}
+
+#Run the model over the input lists:
+
+for(i in 1:110){
+  results[[i]] <- sim_int(b=input_int[[i]]$b, r=input_int[[i]]$r,
+                              r_s=input_int[[i]]$r_s, p=input_int[[i]]$p, f=input_int[[i]]$f,
+                              k=input_int[[i]]$k,years=input_int[[i]]$years, error = input_int[[i]]$error)
+}
+
 
 ```
 
