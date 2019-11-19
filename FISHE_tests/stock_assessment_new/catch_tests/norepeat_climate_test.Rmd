@@ -1,28 +1,31 @@
 ---
-title: "norepeat_noclimate"
+title: "norepeat_climate_test"
 output: html_document
 ---
 
-```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(purrr)
 ```
 
 
+
 #{.tabset}
 
 ##Setup/Assumptions
 
-Experiment: Simulate an initial stock assessment in Year 1 using catch-based data with varied amounts of error around the estimate of biomass. Make a decision on the harvest control rule based on estimate of biomass from the stock assessment. Apply that rule to the fishing mortality in year 1 and never repeat for the remainder of the simulation.
+Experiment: Simulate an initial stock assessment in Year 1 using catch-based data with varied amounts of error around the estimate of biomass. Make a decision on the harvest control rule based on estimate of biomass from the stock assessment. Apply that rule to the fishing mortality in year 1 and never repeat for the remainder of the simulation.This model includes a decrease in productivity over time due to climate change (r_s term).
+
+in this test, I am using one r_s value (-0.005), which is equivalent to a 0.5% decrease in productivity each year
 
 Assumptions: 
  - Fisheries represented in the model have no current management. Initial biomass in the simulation is therefore representative of the equilibrium that the fishery has reached over the years due to some level of fishing mortality (f). 
  - The current f at the beginning of the simulation is reached when catch is equivalent to the surplus production of the fishery at that biomass. 
  - The f calculated at the beginning of the simulation is the true fishing mortality rate of the operating fishery. 
- - There are no influences of climate change on this fishery 
+ - Climate change is affecting the productivity of fish stocks by influeing the growth term (r)
  
- Goal: Simulate the initial use of FISHE, if it is only applied once and never repeated, focusing on the Inital Stock Assessment step of the process. 
+ Goal: Simulate the initial use of FISHE, if it is only applied once and never repeated, focusing on the Inital Stock Assessment step of the process, with climate reducing productivity.
  
  
  ##Model
@@ -30,7 +33,7 @@ Assumptions:
 
 #Baseline model with error around initial stock assessment and no repetition of the stock assessment process for the duration of the simulation:
 
-sim_norep <- function(b, r, r_s, error, p, k, years){
+sim_norep_clim_test <- function(b, r, r_s, error, p, k, years){
   
   results <- data.frame(
     b = rep(NA, years), c = rep(NA, years), 
@@ -116,17 +119,17 @@ Create the experiment input list:
 ```{r experiment-inputs}
 
 #Design experiments
-list_norep <- list(
+list_norep_clim_test <- list(
   b = seq(1000, 10000, 1000),
   r = 0.2,
-  r_s = 0,
+  r_s = -0.005, #this is a -0.5% change in productivity per year - so 10% in 20 years
   error = seq(0.05, 0.55, 0.05),
   p = 0.2,
   k = 10000,
   years = 100
 )
 
-input_norep <- list_norep %>% 
+input_norep_clim_test <- list_norep_clim_test %>% 
   cross()
 
 
@@ -138,31 +141,26 @@ input_norep <- list_norep %>%
 #Run the model over the input lists:
 
 for(i in 1:110){
-  results[[i]] <- sim_norep(b=input_norep[[i]]$b, r=input_norep[[i]]$r,
-                              r_s=input_norep[[i]]$r_s, p=input_norep[[i]]$p, 
-                              k=input_norep[[i]]$k,years=input_norep[[i]]$years, error = input_norep[[i]]$error)
+  results[[i]] <- sim_norep_clim_test(b=input_norep_clim_test[[i]]$b, r=input_norep_clim_test[[i]]$r,
+                              r_s=input_norep_clim_test[[i]]$r_s, p=input_norep_clim_test[[i]]$p, 
+                              k=input_norep_clim_test[[i]]$k,years=input_norep_clim_test[[i]]$years, error = input_norep_clim_test[[i]]$error)
 }
 
 ```
 
-Getting an error - missing value where TRUE/FALSE needed from the first if statement. I will try some fixes on the test_intervals document to see if I can find the problem.  
-
-Chase:
-Tried problem solving this error. To me, the "missing value where TRUE/FALSE needed" seems to say that where it needs a value to say if the IF statement is true or false, it doesn't have one. Which I think means that it wasn't getting an initial f ratio. So, in the Fmsy and Ferr equation set up where we established the year 1 variables, the Fmsy function input used (r=r). I changed this to be r=results$r[1], and it worked. Im not sure if this is right but it seems to be working now. 
-
-##Save to CSV
+##Save to CSV 
 
 ```{r save-to-csv}
 
-input_norep_df <- as.data.frame(matrix(unlist(input_norep), nrow = length(unlist(input_norep[110]))))
+input_norep_clim_test_df <- as.data.frame(matrix(unlist(input_norep_clim_test), nrow = length(unlist(input_norep_clim_test[110]))))
         
-results_norep_df <- as.data.frame(matrix(unlist(results), nrow = length(unlist(results[110]))))
+results_norep_clim_test_df <- as.data.frame(matrix(unlist(results), nrow = length(unlist(results[110]))))
 
-norep_df <- rbind(input_norep_df, results_norep_df)
+norep_clim_test_df <- rbind(input_norep_clim_test_df, results_norep_clim_test_df)
 
-norep_df_final <- data.frame(t(norep_df))
+norep_clim_test_df_final <- data.frame(t(norep_clim_test_df))
 
-write.csv(all_df_t, "G:/Data Analysis/SomefinFishE/FISHE_tests/stock_assessment_new/catch_tests/csv_results/norep_noclim.csv", row.names = FALSE)
+write.csv(all_df_t, "G:/Data Analysis/SomefinFishE/FISHE_tests/stock_assessment_new/catch_tests/csv_results/norep_clim_test.csv", row.names = FALSE)
 
 #plot the results
 
@@ -170,6 +168,4 @@ for(i in 1:110){
  plot(results[[i]]$b)
 }
 
-
 ```
-
