@@ -137,6 +137,9 @@ input_norep <- list_norep %>%
 ##Run
 
 ```{r run}
+
+results = list()
+
 #Run the model over the input lists:
 
 for(i in 1:110){

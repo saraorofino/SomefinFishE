@@ -186,7 +186,7 @@ input_int <- list_int %>%
 
 Run model:
 ```{r run-model}
-
+results = list()
 #Run the model over the input lists:
 
 for(i in 1:110){
