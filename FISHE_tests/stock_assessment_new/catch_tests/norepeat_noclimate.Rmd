@@ -26,78 +26,80 @@ Assumptions:
  Goal: Simulate the initial use of FISHE, if it is only applied once and never repeated, focusing on the Inital Stock Assessment step of the process. 
  
  
- ##Model
+##Model
+
+11.20 SO: Commented this whole chunk out (command+shift+C) to avoid confusion. Testing a new model using error around the f/fmsy ratio in code chunk 8 (model-fratio-error)
 ```{r model}
 
-#Baseline model with error around initial stock assessment and no repetition of the stock assessment process for the duration of the simulation:
-
-sim_norep <- function(b, r, r_s, error, p, k, years){
-  
-  results <- data.frame(
-    b = rep(NA, years), c = rep(NA, years), 
-    year = 1:years, r = rep(NA, years), b_err = rep(NA, years),
-    f = rep(NA, years), f_ratio = rep(NA, years)) #Setup the results dataframe 
-  
-  #Set the initial result for the outputs in year 1
-  results$b[1] = b
-  results$b_err[1] = rnorm(1, mean = results$b[1], sd = (error*results$b[1])) #simulate error in initial stock assessment
-  results$r[1] = r
-  results$f[1] = (results$r[1] / p) * (1 - ((results$b[1] / k) ^ p)) #initial f is based on the actual initial biomass assuming catch=surplus production
-  results$c[1] = results$f[1] * results$b[1] #using f based on initial biomass and actual initial biomass
-  
-  fmsy <-function(r,p){r * (1 / (1+p))} #set up the function to calculate Fmsy based on growth (r) and shape parameter (p)
-  r_calc1 <- results$r[1]
-  f_msy <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1
-  f_err = (results$r[1] / p) * (1 - ((results$b_err[1] / k) ^ p)) #calculate the f the fishery thinks it has from their initial stock assessment with error
-  results$f_ratio[1] = f_err/f_msy #calculate the f_ratio using the f_err and fmsy 
-  
-  
-  ## Loop the model over the specified number of years
-  # DO NOT REPEAT the initial stock assessment - make the HCR decision and apply the f to year 2, this f remains constant 
-  for (t in 2:years) {
-    if(results$year[t] == 2){
-    
-    results$r[t] = results$r[1] * (1 + (r_s*(t-1))) 
-    
-    ##HCR decision will change how f is calculated - this step must come before calculating c 
-    # Calculate fmsy in time t from current r 
-    r_calc2 <- results$r[t]
-    f_msy[t] <- fmsy(r=r_calc2, p=p)
-    
-    #Decisions for f this year based on the ratio calucated this year 
-    if(results$f_ratio[t-1] >= 2){
-       results$f[t] = 0 #I think it makes sense for f to be zero the rest of the years but I don't know how to write that
-   } 
-    if(results$f_ratio[t-1] > 1 & results$f_ratio[t-1] < 2){
-       results$f[t] = 0.9*results$f[t-1] #Reduce by 10% - same thing as keeping 90% of previous fishing mortality
-   }  
-    if(results$f_ratio[t-1] == 1){
-       results$f[t] = results$f[t-1]  #f stays the same in as last year
-   }
-    if(results$f_ratio[t-1] < 1){
-       results$f[t] = 1.05*results$f[t-1] #f increases by 5% from last year
-   } 
-    results$f_ratio[t] <- results$f[t]/f_msy[t] #the ratio of f/fmsy this year should be based on fishing pressure and msy from that year
-    
-    #Calculate remaining results - pay attention to the order!
-    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
-    results$b_err[t] = 0 #Don't want to redraw error this step only happens once in this simulation
-    results$c[t] = results$f[t] * results$b[t]
-   } 
-
-  if(results$year[t] != 2){
-    results$r[t] = results$r[1] * (1 + (r_s*(t-1)))
-    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
-    results$f[t] = results$f[2]
-    results$c[t] = results$f[t] * results$b[t]
-    results$b_err[t] = 0
-    results$f_ratio[t] = 0
-    
-  }
-}
-  return(results)
-}
-
+# #Baseline model with error around initial stock assessment and no repetition of the stock assessment process for the duration of the simulation:
+# 
+# sim_norep <- function(b, r, r_s, error, p, k, years){
+#   
+#   results <- data.frame(
+#     b = rep(NA, years), c = rep(NA, years), 
+#     year = 1:years, r = rep(NA, years), b_err = rep(NA, years),
+#     f = rep(NA, years), f_ratio = rep(NA, years)) #Setup the results dataframe 
+#   
+#   #Set the initial result for the outputs in year 1
+#   results$b[1] = b
+#   results$b_err[1] = rnorm(1, mean = results$b[1], sd = (error*results$b[1])) #simulate error in initial stock assessment
+#   results$r[1] = r
+#   results$f[1] = (results$r[1] / p) * (1 - ((results$b[1] / k) ^ p)) #initial f is based on the actual initial biomass assuming catch=surplus production
+#   results$c[1] = results$f[1] * results$b[1] #using f based on initial biomass and actual initial biomass
+#   
+#   fmsy <-function(r,p){r * (1 / (1+p))} #set up the function to calculate Fmsy based on growth (r) and shape parameter (p)
+#   r_calc1 <- results$r[1]
+#   f_msy <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1
+#   f_err = (results$r[1] / p) * (1 - ((results$b_err[1] / k) ^ p)) #calculate the f the fishery thinks it has from their initial stock assessment with error
+#   results$f_ratio[1] = f_err/f_msy #calculate the f_ratio using the f_err and fmsy 
+#   
+#   
+#   ## Loop the model over the specified number of years
+#   # DO NOT REPEAT the initial stock assessment - make the HCR decision and apply the f to year 2, this f remains constant 
+#   for (t in 2:years) {
+#     if(results$year[t] == 2){
+#     
+#     results$r[t] = results$r[1] * (1 + (r_s*(t-1))) 
+#     
+#     ##HCR decision will change how f is calculated - this step must come before calculating c 
+#     # Calculate fmsy in time t from current r 
+#     r_calc2 <- results$r[t]
+#     f_msy[t] <- fmsy(r=r_calc2, p=p)
+#     
+#     #Decisions for f this year based on the ratio calucated this year 
+#     if(results$f_ratio[t-1] >= 2){
+#        results$f[t] = 0 #I think it makes sense for f to be zero the rest of the years but I don't know how to write that
+#    } 
+#     if(results$f_ratio[t-1] > 1 & results$f_ratio[t-1] < 2){
+#        results$f[t] = 0.9*results$f[t-1] #Reduce by 10% - same thing as keeping 90% of previous fishing mortality
+#    }  
+#     if(results$f_ratio[t-1] == 1){
+#        results$f[t] = results$f[t-1]  #f stays the same in as last year
+#    }
+#     if(results$f_ratio[t-1] < 1){
+#        results$f[t] = 1.05*results$f[t-1] #f increases by 5% from last year
+#    } 
+#     results$f_ratio[t] <- results$f[t]/f_msy[t] #the ratio of f/fmsy this year should be based on fishing pressure and msy from that year
+#     
+#     #Calculate remaining results - pay attention to the order!
+#     results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+#     results$b_err[t] = 0 #Don't want to redraw error this step only happens once in this simulation
+#     results$c[t] = results$f[t] * results$b[t]
+#    } 
+# 
+#   if(results$year[t] != 2){
+#     results$r[t] = results$r[1] * (1 + (r_s*(t-1)))
+#     results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+#     results$f[t] = results$f[2]
+#     results$c[t] = results$f[t] * results$b[t]
+#     results$b_err[t] = 0
+#     results$f_ratio[t] = 0
+#     
+#   }
+# }
+#   return(results)
+# }
+# 
 
 
 ```
@@ -107,7 +109,7 @@ sim_norep <- function(b, r, r_s, error, p, k, years){
 Quick check over a simple input to be sure the model runs properly:
 ```{r model-check}
 
-check_result <- sim_norep(b=6000, r=0.2, r_s=0, error=0.10, p=0.2, k=10000, years=100)
+#check_result <- sim_norep(b=6000, r=0.2, r_s=0, error=0.10, p=0.2, k=10000, years=100)
 
 ```
 
@@ -117,19 +119,19 @@ check_result <- sim_norep(b=6000, r=0.2, r_s=0, error=0.10, p=0.2, k=10000, year
 Create the experiment input list:
 ```{r experiment-inputs}
 
-#Design experiments
-list_norep <- list(
-  b = seq(1000, 10000, 1000),
-  r = 0.2,
-  r_s = 0,
-  error = seq(0.05, 0.55, 0.05),
-  p = 0.2,
-  k = 10000,
-  years = 100
-)
-
-input_norep <- list_norep %>% 
-  cross()
+# #Design experiments
+# list_norep <- list(
+#   b = seq(1000, 10000, 1000),
+#   r = 0.2,
+#   r_s = 0,
+#   error = seq(0.05, 0.55, 0.05),
+#   p = 0.2,
+#   k = 10000,
+#   years = 100
+# )
+# 
+# input_norep <- list_norep %>% 
+#   cross()
 
 
 ```
@@ -208,3 +210,127 @@ input_detail_2 <- input_edit %>%
 
 ```
 
+
+##Model Error f/fmsy
+
+Try the no climate no repeat model but instead of drawing b_err to find f_err to calculate f_ratio we just want to calculate the actual f_ratio and then draw a random ratio with some error
+
+```{r model-fratio-error}
+
+#Baseline model with error around the f_ratio (f/fmsy) and no repetition of the stock assessment process for the duration of the simulation:
+
+sim_norep2 <- function(b, r, r_s, error, p, k, years){
+  
+  results <- data.frame(
+    b = rep(NA, years), c = rep(NA, years), 
+    year = 1:years, r = rep(NA, years),
+    f_ratio = rep(NA, years), f_ratio_err = rep(NA, years)) #Setup the results dataframe 
+  
+  #Set the initial result for the outputs in year 1
+  results$b[1] = b
+  results$r[1] = r
+  results$f[1] = (results$r[1] / p) * (1 - ((results$b[1] / k) ^ p)) #initial f assuming catch = surplus
+  results$c[1] = results$f[1] * results$b[1] #using f based on initial biomass and actual initial biomass
+  
+  fmsy <-function(r,p){r * (1 / (1+p))} #set up the function to calculate Fmsy based on growth (r) and shape parameter (p)
+  r_calc1 <- results$r[1]
+  f_msy <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1
+  results$f_ratio[1] = results$f[1]/f_msy #calculate the f_ratio using the f_err and fmsy
+  results$f_ratio_err[1] = rnorm(1, mean = results$f_ratio[1], sd = (error*results$f_ratio[1]))
+  
+  
+  ## Loop the model over the specified number of years
+  # DO NOT REPEAT the initial stock assessment - make the HCR decision and apply the f to year 2, this f remains constant 
+  for (t in 2:years) {
+    if(results$year[t] == 2){
+    
+    results$r[t] = results$r[1] * (1 + (r_s*(t-1))) 
+    
+    ##HCR decision will change how f is calculated - this step must come before calculating c 
+    # Calculate fmsy in time t from current r 
+    r_calc2 <- results$r[t]
+    f_msy[t] <- fmsy(r=r_calc2, p=p)
+    
+    #Decisions for f this year based on the ratio with error in the previous year 
+    if(results$f_ratio_err[t-1] >= 2){
+       results$f[t] = 0 #I think it makes sense for f to be zero the rest of the years but I don't know how to write that
+   } 
+    if(results$f_ratio_err[t-1] > 1 & results$f_ratio_err[t-1] < 2){
+       results$f[t] = 0.9*results$f[t-1] #Reduce by 10% - same thing as keeping 90% of previous fishing mortality
+   }  
+    if(results$f_ratio_err[t-1] == 1){
+       results$f[t] = results$f[t-1]  #f stays the same in as last year
+   }
+    if(results$f_ratio_err[t-1] < 1){
+       results$f[t] = 1.05*results$f[t-1] #f increases by 5% from last year
+   } 
+    results$f_ratio[t] <- results$f[t]/f_msy[t] #the ratio of f/fmsy this year should be based on fishing pressure and msy from that year
+    
+    #Calculate remaining results - pay attention to the order!
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    results$f_ratio_err[t] = 0 #Don't want to redraw error this step only happens once in this simulation
+    results$c[t] = results$f[t] * results$b[t]
+   } 
+
+  if(results$year[t] != 2){
+    results$r[t] = results$r[1] * (1 + (r_s*(t-1)))
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    results$f[t] = results$f[2]
+    results$c[t] = results$f[t] * results$b[t]
+    results$f_ratio_err[t] = 0
+    results$f_ratio[t] = 0
+    
+  }
+}
+  return(results)
+}
+
+
+```
+
+
+Simple results check:
+```{r simple-check-fratio-error}
+
+check_result_fratio <- sim_norep2(b=6000, r=0.2, r_s=0, error=0.10, p=0.2, k=10000, years=100)
+```
+
+
+Create the experiment input list:
+```{r experiment-inputs}
+
+#Design experiments
+list_norep2 <- list(
+  b = seq(1000, 10000, 1000),
+  r = 0.2,
+  r_s = 0,
+  error = seq(0.05, 0.55, 0.05),
+  p = 0.2,
+  k = 10000,
+  years = 100
+)
+
+input_norep2 <- list_norep %>%
+  cross()
+
+
+```
+
+
+Run the model:
+```{r run}
+
+results = list()
+
+#Run the model over the input lists:
+
+for(i in 1:110){
+  results[[i]] <- sim_norep2(b=input_norep2[[i]]$b, r=input_norep2[[i]]$r,
+                             r_s=input_norep2[[i]]$r_s, p=input_norep2[[i]]$p,
+                             k=input_norep2[[i]]$k,years=input_norep2[[i]]$years, 
+                             error = input_norep2[[i]]$error)
+}
+
+```
+
+Okay this ran and it worked for me on the first try. I think it's doing what we want by calculating the actual fratio and then drawing a f/fmsy ratio with some error (may need to ask if this error should also be log normal because right now it is not). The model applies the estimated ratio with error (f_ratio_err) to the HCR decision tree and then uses that decision to change the actual f in the next year. This simulation only happens once and the decision made in year 2 is based on the ratios from year 1 but the HCR is applied to f in year 2 and f is held constant the rest of the simulation. 
