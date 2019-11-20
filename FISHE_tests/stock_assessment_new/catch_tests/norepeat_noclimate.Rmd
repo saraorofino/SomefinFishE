@@ -201,7 +201,7 @@ input_edit_detail <- input_edit %>%
 
 #this one looks better but the code is kinda hacky
 input_detail_2 <- input_edit %>%
-  mutate(parameters = paste0(paste0(paste0(paste0(paste0("r=", r), "_r_s="), r_s), "_err="), error))
+  mutate(parameters = paste0(paste0(paste0(paste0(paste0("r=", r), ", r_s="), r_s), ", err="), error))
 
 #This is a lengthy code but it gives a long dataframe with column names and an added row with an experiment identifier
 ## I think if we repeat this for the results and then merge them we might be able to tranpose it back into long format
