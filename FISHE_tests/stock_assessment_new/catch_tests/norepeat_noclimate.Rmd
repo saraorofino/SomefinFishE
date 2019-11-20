@@ -192,8 +192,11 @@ id <- c("b", "r", "r_s", "error", "p", "k", "years") #create a character vector 
 row.names(input_norep_df) <- id #add the id as row names
 colnames(input_norep_df)[1:110] <-gsub('[V]', "exp", colnames(input_norep_df)[1:110]) #add exp to the column headings instead of V
 
-input_edit <- data.frame(t(input_norep_df)) %>% 
-  mutate(id = row.names(input_edit))
+input_edit <- data.frame(t(input_norep_df))%>% 
+  mutate(id = row.names(input_edit)) 
+
+input_edit_detail <- input_edit %>%  
+  unite("parameters", r, r_s, error, remove = FALSE)
 
 #This is a lengthy code but it gives a long dataframe with column names and an added row with an experiment identifier
 ## I think if we repeat this for the results and then merge them we might be able to tranpose it back into long format
