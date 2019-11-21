@@ -1,5 +1,5 @@
 ---
-title: "rep20_climate"
+title: "rep5_noclimate"
 output: html_document
 ---
 
@@ -15,18 +15,16 @@ library(tidyr)
 
 ##Setup/Assumptions
 
-Experiment: Simulate an initial stock assessment in Year 1 using catch-based data with varied amounts of error around the estimate of f/fmsy. Make a decision on the harvest control rule based on estimate of f/fmsy. Apply that rule to the fishing mortality in that year. Repeat this process every 20 years, applying the change in f to that year.This model includes a decrease in productivity over time due to climate change (r_s term).
-
-in this test, I am using one r_s value (-0.005), which is equivalent to a 0.5% decrease in productivity each year
+Experiment: Simulate an initial stock assessment in Year 1 using catch-based data with varied amounts of error around the estimate of f/fmsy. Make a decision on the harvest control rule based on estimate of f/fmsy. Apply that rule to the fishing mortality in that year. Repeat this process every 5 years, applying the change in f to that year.
 
 Assumptions: 
  - Fisheries represented in the model have no current management. Initial biomass in the simulation is therefore representative of the equilibrium that the fishery has reached over the years due to some level of fishing mortality (f). 
  - Fishing mortality and f/fmsy ratios are calculated at the beginning of each year and the change in f is applied to fishing in that same year
  - The current f at the beginning of the simulation is reached when catch is equivalent to the surplus production of the fishery at that biomass. 
  - The f calculated at the beginning of the simulation is the true fishing mortality rate of the operating fishery. 
- - Climate change is affecting the productivity of fish stocks by influeing the growth term (r)
+ - There are no influences of climate change on this fishery 
  
-Goal: Simulate the initial use of FISHE if it is only applied on 20 year intervals, focusing on the Inital Stock Assessment step of the process, with climate change reducing productivity. 
+Goal: Simulate the initial use of FISHE, if it is only applied on 5 year intervals, focusing on the Inital Stock Assessment step of the process. 
  
  
 ##Model
@@ -35,7 +33,7 @@ Before running the model run the following code:
 ```{r setup}
 
 #create an interval vector for times that we do want to do the assessment:
-assess_int <- c(20,40,60,80,100)
+assess_int <- seq(5,100,5)
 
 #Write a "not contained in" function"
 `%not_in%` <- purrr::negate(`%in%`)
@@ -46,7 +44,7 @@ A note about the HCR and f: the HCR decision must be applied to f in the first y
 
 #Baseline model with error around the f_ratio (f/fmsy) and no repetition of the stock assessment process for the duration of the simulation:
 
-sim_20c <- function(b, r, r_s, error, p, k, years){
+sim_5 <- function(b, r, r_s, error, p, k, years){
   
   results <- data.frame(
     b = rep(NA, years), c = rep(NA, years), 
@@ -138,7 +136,7 @@ sim_20c <- function(b, r, r_s, error, p, k, years){
 Simple results check:
 ```{r simple-check-fratio-error}
 
-check_result_20 <- sim_20c(b=6000, r=0.2, r_s=-0.005, error=0.10, p=0.2, k=10000, years=100)
+check_result_5 <- sim_5(b=6000, r=0.2, r_s=0, error=0.10, p=0.2, k=10000, years=100)
 ```
 
 ##Model Inputs List
@@ -147,17 +145,17 @@ Create the experiment input list:
 ```{r experiment-inputs}
 
 #Design experiments
-list_20c <- list(
+list_5 <- list(
   b = seq(1000, 10000, 1000),
   r = 0.2,
-  r_s = -0.005,
+  r_s = 0,
   error = seq(0.05, 0.55, 0.05),
   p = 0.2,
   k = 10000,
   years = 100
 )
 
-input_20c <- list_20c %>%
+input_5 <- list_5 %>%
   cross()
 
 
@@ -174,10 +172,10 @@ results = list()
 #Run the model over the input lists:
 
 for(i in 1:110){
-  results[[i]] <- sim_20c(b=input_20c[[i]]$b, r=input_20c[[i]]$r,
-                             r_s=input_20c[[i]]$r_s, p=input_20c[[i]]$p,
-                             k=input_20c[[i]]$k,years=input_20c[[i]]$years, 
-                             error = input_20c[[i]]$error)
+  results[[i]] <- sim_5(b=input_5[[i]]$b, r=input_5[[i]]$r,
+                             r_s=input_5[[i]]$r_s, p=input_5[[i]]$p,
+                             k=input_5[[i]]$k,years=input_5[[i]]$years, 
+                             error = input_5[[i]]$error)
 }
 
 ```

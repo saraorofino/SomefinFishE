@@ -1,7 +1,8 @@
 ---
-title: "rep20_climate"
+title: "rep15_climate"
 output: html_document
 ---
+
 
 
 ```{r packages, include=FALSE, warning=FALSE, message=FALSE}
@@ -15,7 +16,7 @@ library(tidyr)
 
 ##Setup/Assumptions
 
-Experiment: Simulate an initial stock assessment in Year 1 using catch-based data with varied amounts of error around the estimate of f/fmsy. Make a decision on the harvest control rule based on estimate of f/fmsy. Apply that rule to the fishing mortality in that year. Repeat this process every 20 years, applying the change in f to that year.This model includes a decrease in productivity over time due to climate change (r_s term).
+Experiment: Simulate an initial stock assessment in Year 1 using catch-based data with varied amounts of error around the estimate of f/fmsy. Make a decision on the harvest control rule based on estimate of f/fmsy. Apply that rule to the fishing mortality in that year. Repeat this process every 15 years, applying the change in f to that year.This model includes a decrease in productivity over time due to climate change (r_s term).
 
 in this test, I am using one r_s value (-0.005), which is equivalent to a 0.5% decrease in productivity each year
 
@@ -26,7 +27,7 @@ Assumptions:
  - The f calculated at the beginning of the simulation is the true fishing mortality rate of the operating fishery. 
  - Climate change is affecting the productivity of fish stocks by influeing the growth term (r)
  
-Goal: Simulate the initial use of FISHE if it is only applied on 20 year intervals, focusing on the Inital Stock Assessment step of the process, with climate change reducing productivity. 
+Goal: Simulate the initial use of FISHE, if it is only applied on 15 year intervals, focusing on the Inital Stock Assessment step of the process, with climate change reducing productivity. 
  
  
 ##Model
@@ -35,18 +36,19 @@ Before running the model run the following code:
 ```{r setup}
 
 #create an interval vector for times that we do want to do the assessment:
-assess_int <- c(20,40,60,80,100)
+assess_int <- c(15,30,45,60,75,90)
 
 #Write a "not contained in" function"
 `%not_in%` <- purrr::negate(`%in%`)
 ```
+
 
 A note about the HCR and f: the HCR decision must be applied to f in the first year otherwise f and biomass will remain constant until year 20 when the next assessment is applied. 
 ```{r model}
 
 #Baseline model with error around the f_ratio (f/fmsy) and no repetition of the stock assessment process for the duration of the simulation:
 
-sim_20c <- function(b, r, r_s, error, p, k, years){
+sim_15c <- function(b, r, r_s, error, p, k, years){
   
   results <- data.frame(
     b = rep(NA, years), c = rep(NA, years), 
@@ -138,7 +140,7 @@ sim_20c <- function(b, r, r_s, error, p, k, years){
 Simple results check:
 ```{r simple-check-fratio-error}
 
-check_result_20 <- sim_20c(b=6000, r=0.2, r_s=-0.005, error=0.10, p=0.2, k=10000, years=100)
+check_result_15c <- sim_15c(b=6000, r=0.2, r_s=-0.005, error=0.10, p=0.2, k=10000, years=100)
 ```
 
 ##Model Inputs List
@@ -147,7 +149,7 @@ Create the experiment input list:
 ```{r experiment-inputs}
 
 #Design experiments
-list_20c <- list(
+list_15c <- list(
   b = seq(1000, 10000, 1000),
   r = 0.2,
   r_s = -0.005,
@@ -157,7 +159,7 @@ list_20c <- list(
   years = 100
 )
 
-input_20c <- list_20c %>%
+input_15c <- list_15c %>%
   cross()
 
 
@@ -174,10 +176,10 @@ results = list()
 #Run the model over the input lists:
 
 for(i in 1:110){
-  results[[i]] <- sim_20c(b=input_20c[[i]]$b, r=input_20c[[i]]$r,
-                             r_s=input_20c[[i]]$r_s, p=input_20c[[i]]$p,
-                             k=input_20c[[i]]$k,years=input_20c[[i]]$years, 
-                             error = input_20c[[i]]$error)
+  results[[i]] <- sim_15c(b=input_15c[[i]]$b, r=input_15c[[i]]$r,
+                             r_s=input_15c[[i]]$r_s, p=input_15c[[i]]$p,
+                             k=input_15c[[i]]$k,years=input_15c[[i]]$years, 
+                             error = input_15c[[i]]$error)
 }
 
 ```

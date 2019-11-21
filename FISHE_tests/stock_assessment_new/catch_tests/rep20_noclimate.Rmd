@@ -14,9 +14,7 @@ library(tidyr)
 
 ##Setup/Assumptions
 
-Experiment: Simulate an initial stock assessment in Year 1 using catch-based data with varied amounts of error around the estimate of f/fmsy. Make a decision on the harvest control rule based on estimate of f/fmsy. Apply that rule to the fishing mortality in that year. Repeat this process every 20 years, applying the change in f to that year.This model includes a decrease in productivity over time due to climate change (r_s term).
-
-in this test, I am using one r_s value (-0.005), which is equivalent to a 0.5% decrease in productivity each year
+Experiment: Simulate an initial stock assessment in Year 1 using catch-based data with varied amounts of error around the estimate of f/fmsy. Make a decision on the harvest control rule based on estimate of f/fmsy. Apply that rule to the fishing mortality in that year. Repeat this process every 20 years, applying the change in f to that year.
 
 Assumptions: 
  - Fisheries represented in the model have no current management. Initial biomass in the simulation is therefore representative of the equilibrium that the fishery has reached over the years due to some level of fishing mortality (f). 
