@@ -150,9 +150,9 @@ Create the experiment input list:
 
 #Design experiments
 list_15c <- list(
-  b = seq(1000, 10000, 1000),
-  r = 0.2,
-  r_s = -0.005,
+  b = seq(1000, 8000, 1000),
+  r = seq(0.1, .8, .05),
+  r_s = seq(-0.015, 0.020, 0.002), #this is a -0.5% change in productivity per year - so 10% in 20 years
   error = seq(0.05, 0.55, 0.05),
   p = 0.2,
   k = 10000,
@@ -175,7 +175,7 @@ results = list()
 
 #Run the model over the input lists:
 
-for(i in 1:110){
+for(i in 1:23760){
   results[[i]] <- sim_15c(b=input_15c[[i]]$b, r=input_15c[[i]]$r,
                              r_s=input_15c[[i]]$r_s, p=input_15c[[i]]$p,
                              k=input_15c[[i]]$k,years=input_15c[[i]]$years, 
@@ -194,7 +194,7 @@ col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "f_ratio_err", "i
 results_id <- list()
 
 #Loop to add ids to each experiment in the list - make sure the 1:xxx matches the number of lists in the results
-for(i in 1:110){
+for(i in 1:23760){
   dat <- as.data.frame(matrix(unlist(results[i]), ncol = 8))
   dat$id <- i
   results_id[[i]] <- dat

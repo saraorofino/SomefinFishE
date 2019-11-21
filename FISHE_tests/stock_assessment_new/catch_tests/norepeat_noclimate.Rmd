@@ -56,19 +56,22 @@ sim_norep2 <- function(b, r, r_s, error, p, k, years){
   
   #Decide how to change f based on the f ratio estimate with error:
   if(results$f_ratio_err[1] >= 2){
-       results$f[1] = 0 #Close the fishery
+       f_act = 0 #Close the fishery
    } 
     if(results$f_ratio_err[1] > 1 & results$f_ratio_err[1] < 2){
-       results$f[1] = 0.9*f_int #Reduce by 10% - same thing as keeping 90% of previous fishing mortality
+       f_act = 0.9*f_int #Reduce by 10% - same thing as keeping 90% of previous fishing mortality
    }  
     if(results$f_ratio_err[1] == 1){
-       results$f[1] = f_int  #f stays the same in as last year
+       f_act = f_int  #f stays the same in as last year
    }
     if(results$f_ratio_err[1] < 1){
-       results$f[1] = 1.05*f_int #f increases by 5% from last year
+       f_act = 1.05*f_int #f increases by 5% from last year
    } 
   
-  #Calculate catch in year one based on the new f:
+  #Calculate an f with biased error:
+  results$f[1] = rnorm(1,mean = f_act, sd = (0.1*f_act)) #right now its drawing 10% error around f - want to bias this but I'm not sure how
+  
+  #Calculate catch in year one based on the f with error:
   results$c[1] = results$f[1] * results$b[1] 
   
   
@@ -78,7 +81,7 @@ sim_norep2 <- function(b, r, r_s, error, p, k, years){
     
     #Results for the parameters that still update every year: 
     results$r[t] = results$r[1] * (1 + (r_s*(t-1))) 
-    results$f[t] = results$f[1]
+    results$f[t] = rnorm(1,mean = f_act, sd = (0.1*f_act)) #randomly drawn f from the f_act in year 1
     results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
     results$c[t] = results$f[t] * results$b[t]
     
@@ -169,16 +172,16 @@ results_norep <- bind_rows(results_id)
 colnames(results_norep) <- col_names
 
 #Write as CSV:
-library(here)
-write.csv(results_norep, file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/norep_noclim.csv"),
-          row.names = FALSE)
+# library(here)
+# write.csv(results_norep, file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/norep_noclim.csv"),
+#           row.names = FALSE)
 
 ```
 
 
 ##OLD!
 
-11.20 Sara: Commented this whole chunk out (command+shift+C) to avoid confusion. Testing a new model using error around the f/fmsy ratio; I moved this down and put the new code above. 
+11.20 Sara: Commented this whole chunk out to avoid confusion. Testing a new model using error around the f/fmsy ratio; I moved this down and put the new code above. 
 ```{r model}
 
 # #Baseline model with error around initial stock assessment and no repetition of the stock assessment process for the duration of the simulation:

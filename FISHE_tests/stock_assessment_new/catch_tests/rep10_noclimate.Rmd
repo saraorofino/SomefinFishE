@@ -147,8 +147,8 @@ Create the experiment input list:
 
 #Design experiments
 list_10 <- list(
-  b = seq(1000, 10000, 1000),
-  r = 0.2,
+  b = seq(1000, 8000, 1000),
+  r = seq(0.1, .8, .05),
   r_s = 0,
   error = seq(0.05, 0.55, 0.05),
   p = 0.2,
@@ -172,7 +172,7 @@ results = list()
 
 #Run the model over the input lists:
 
-for(i in 1:110){
+for(i in 1:1320){
   results[[i]] <- sim_10(b=input_10[[i]]$b, r=input_10[[i]]$r,
                              r_s=input_10[[i]]$r_s, p=input_10[[i]]$p,
                              k=input_10[[i]]$k,years=input_10[[i]]$years, 
@@ -191,7 +191,7 @@ col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "f_ratio_err", "i
 results_id <- list()
 
 #Loop to add ids to each experiment in the list - make sure the 1:xxx matches the number of lists in the results
-for(i in 1:110){
+for(i in 1:1320){
   dat <- as.data.frame(matrix(unlist(results[i]), ncol = 8))
   dat$id <- i
   results_id[[i]] <- dat
