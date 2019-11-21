@@ -179,3 +179,32 @@ for(i in 1:110){
 }
 
 ```
+
+##Save CSV
+```{r save-csv}
+
+#Create the list of column names:
+col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "f_ratio_err", "id")
+
+#Create a new list with ids
+results_id <- list()
+
+#Loop to add ids to each experiment in the list - make sure the 1:xxx matches the number of lists in the results
+for(i in 1:110){
+  dat <- as.data.frame(matrix(unlist(results[i]), ncol = 8))
+  dat$id <- i
+  results_id[[i]] <- dat
+}
+
+#Bind all the experiments together
+results_rep5 <- bind_rows(results_id)
+
+#Update the column names:
+colnames(results_rep5) <- col_names
+
+#Write as CSV:
+library(here)
+write.csv(results_rep5, file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep5_noclim.csv"),
+          row.names = FALSE)
+
+```
