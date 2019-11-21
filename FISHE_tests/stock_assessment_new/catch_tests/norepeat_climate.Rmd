@@ -135,7 +135,8 @@ results = list()
 for(i in 1:110){
   results[[i]] <- sim_norep_clim(b=input_norep_clim[[i]]$b, r=input_norep_clim[[i]]$r,
                               r_s=input_norep_clim[[i]]$r_s, p=input_norep_clim[[i]]$p, 
-                              k=input_norep_clim[[i]]$k,years=input_norep_clim[[i]]$years, error = input_norep_clim[[i]]$error)
+                              k=input_norep_clim[[i]]$k,years=input_norep_clim[[i]]$years,
+                              error = input_norep_clim[[i]]$error)
 }
 
 ```

@@ -48,7 +48,7 @@ sim_norep2 <- function(b, r, r_s, error, p, k, years){
   f_int = (results$r[1] / p) * (1 - ((results$b[1] / k) ^ p)) #initial f assuming catch = surplus
   
   
-  fmsy <-function(r,p){r * (1 / (1+p))} #set up the function to calculate Fmsy based on growth (r) and shape parameter (p)
+  fmsy <-function(r,p){r * (1 / (1+p))} #Calculate Fmsy 
   r_calc1 <- results$r[1]
   results$f_msy[1] <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1 based on historical parameters
   results$f_ratio[1] = f_int/results$f_msy[1] #calculate the actual f_ratio from initial fishing pressure (this is basically f in time t-1) and fmsy
@@ -147,47 +147,33 @@ Okay this ran and it worked for me on the first try (I ran the fmsy function fir
 
 
 ##Save to CSV
-```{r save-run2}
+```{r}
 
-##Set Up - Need to create the first dataframe (results_edit) to feed into the loop:
-col_df <- 7
-col_names <- c("b", "c", "year", "r", "f_ratio", "f_ratio_err", "f")
-col_names2 <- c("b", "c", "year", "r", "f_ratio", "f_ratio_err", "f", "id")
+#Create the list of column names:
+col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "f_ratio_err", "id")
 
-results_df <- as.data.frame(matrix(unlist(results[1]), ncol = 7))
-colnames(results_df) <- col_names
+#Create a new list with ids
+results_id <- list()
 
-results_edit <- results_df %>% 
-  mutate(id = "exp1")
-
-id_nums <- seq(1,110,1) #to help with pasting the correct id
-
-#Now run the loop below
-
-for(t in 2:110){
-  
-  if(t == 2){
-  results_df <- as.data.frame(matrix(unlist(results[[2]]), ncol = 7))
-  id <- paste("exp", id_nums[t], sep = "")
-  results_df$id <- id
-  colnames(results_df) <- col_names2
-  results_norep[t] <- rbind(results_edit, results_df)
-  }
-  if(t > 2){
-  id <- paste("exp", id_nums[t], sep = "")
-  experiment[t] <- as.data.frame(matrix(unlist(results[[t]]), ncol = 7)) %>% 
-    mutate(id = id)
-  colnames(experiment[t]) <- col_names #I don't this part is working correctly with the [t] but I can't seem to fix it 
-  results_norep[t] <- rbind(results_norep[t-1], experiment[t])
-  }
-
-  return(results_norep)
-  
+#Loop to add ids to each experiment in the list - make sure the 1:xxx matches the number of lists in the results
+for(i in 1:110){
+  dat <- as.data.frame(matrix(unlist(results[i]), ncol = 8))
+  dat$id <- i
+  results_id[[i]] <- dat
 }
 
-#This loop only works for t=2 and it gives me what I want but I can't figure out to generalize it for t>2; now I'm getting names do not match previous names but I don't know how to get the colnames to function with [t]
-```
+#Bind all the experiments together
+results_norep <- bind_rows(results_id)
 
+#Update the column names:
+colnames(results_norep) <- col_names
+
+#Write as CSV:
+library(here)
+write.csv(results_norep, file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/norep_noclim.csv"),
+          row.names = FALSE)
+
+```
 
 
 ##OLD!
