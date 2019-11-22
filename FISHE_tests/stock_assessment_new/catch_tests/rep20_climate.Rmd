@@ -190,7 +190,7 @@ for(i in 1:2430){
 ```{r save-csv}
 
 #Create the list of column names:
-col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "f_ratio_err", "id")
+col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "f_ratio_err", "id", "r_0", "error", "r_s")
 
 #Create a new list with ids
 results_id <- list()
@@ -199,6 +199,9 @@ results_id <- list()
 for(i in 1:2430){
   dat <- as.data.frame(matrix(unlist(results[i]), ncol = 8))
   dat$id <- i
+  dat$r_0 <- rep(input_20c[[i]]$r, 100)
+  dat$err <- rep(input_20c[[i]]$error, 100)
+  dat$r_s <- rep(input_20c[[i]]$r_s, 100)
   results_id[[i]] <- dat
 }
 
@@ -211,6 +214,6 @@ colnames(results_rep20c) <- col_names
 #Write as CSV:
 # library(here)
 # write.csv(results_rep20c, file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep20_clim.csv"),
-#           row.names = FALSE)
+ #          row.names = FALSE)
 
 ```
