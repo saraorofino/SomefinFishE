@@ -211,8 +211,8 @@ results_rep20 <- bind_rows(results_id)
 colnames(results_rep20) <- col_names
 
 #Write as CSV:
- library(here)
- write.csv(results_rep20, file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep20_noclim.csv"),
-           row.names = FALSE)
+# library(here)
+# write.csv(results_rep20, file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep20_noclim.csv"),
+ #          row.names = FALSE)
 
 ```
