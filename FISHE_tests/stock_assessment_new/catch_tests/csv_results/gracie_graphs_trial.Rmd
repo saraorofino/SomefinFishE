@@ -1,0 +1,65 @@
+---
+title: "Graphs- Trial 1"
+author: "Gracie White"
+date: "11/21/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+#load packages and read in data 
+
+library(tidyverse)
+
+norep_noclim_df <- read_csv("norep_noclim.csv")
+
+#alter dataset slightly, may be unnecessary, but we shall see 
+nr_nc_df <- norep_noclim_df %>%
+   mutate(parameters = paste0(paste0(paste0(paste0(paste0("r=", r), ", f="), f), ", err="), f_ratio_err)) %>% 
+  group_by(id)
+
+nr_nc_plot <- ggplot(nr_nc_df, aes(x = year, y = b, group = id)) +
+  geom_line(aes(color = r)) +
+  theme_bw()
+
+nr_nc_plot
+
+```
+
+
+```{r}
+norep_clim_df <- read_csv("norep_clim.csv")
+
+#alter dataset slightly, may be unnecessary, but we shall see 
+nr_c_df <- norep_clim_df %>%
+   mutate(parameters = paste0(paste0(paste0(paste0(paste0("r=", r), ", f="), f), ", err="), f_ratio_err)) %>% 
+  group_by(id)
+
+nr_c_plot <- ggplot(nr_c_df, aes(x = year, y = b, group = id)) +
+  geom_line(aes(color = r)) +
+  theme_bw()
+
+nr_c_plot
+```
+
+
+
+```{r}
+rep10_clim_df <- read_csv("rep10_clim.csv")
+
+#alter dataset slightly, may be unnecessary, but we shall see 
+r10_c_df <- rep10_clim_df %>%
+   mutate(parameters = paste0(paste0(paste0(paste0(paste0("r=", r), ", f="), f), ", err="), f_ratio_err)) %>% 
+  group_by(id)
+
+r10_c_plot <- ggplot(r10_c_df, aes(x = year, y = b, group = id)) +
+  geom_line(aes(color = r)) +
+  theme_bw() 
+
+r10_c_plot
+```
+
