@@ -62,8 +62,7 @@ r10_nc_plot <- ggplot(r10_nc_df, aes(x = year, y = b, group = id)) +
   theme_bw() +
   scale_color_continuous(low = "#079EDF", high = "#B8CE55", name = "Error Ratio") +
   labs(title = "10 Year Adaption, No Climate", y = "Biomass", x = "Year") +
-  facet_wrap(~initial_r)
-
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold"))
 
 r10_nc_plot
 ```
