@@ -23,6 +23,7 @@ Assumptions:
  - The current f at the beginning of the simulation is reached when catch is equivalent to the surplus production of the fishery at that biomass. 
  - The f calculated at the beginning of the simulation is the true fishing mortality rate of the operating fishery. 
  - There are no influences of climate change on this fishery 
+ - The f that comes out of the HCR is the actual f in the fishery moving forward (fisherman are adhering to that f)
  
  Goal: Simulate the initial use of FISHE, if it is only applied once and never repeated, focusing on the Inital Stock Assessment step of the process. 
  
@@ -39,7 +40,7 @@ sim_norep2 <- function(b, r, r_s, error, p, k, years){
   
   results <- data.frame(
     b = rep(NA, years), c = rep(NA, years), 
-    year = 1:years, r = rep(NA, years), f = rep(NA, years),
+    year = 1:years, r = rep(NA, years), f = rep(NA, years), 
     f_msy = rep(NA, years), f_ratio = rep(NA, years), f_ratio_err = rep(NA, years)) #Setup the results dataframe 
   
   #Set the initial result for the outputs in year 1
@@ -52,24 +53,22 @@ sim_norep2 <- function(b, r, r_s, error, p, k, years){
   r_calc1 <- results$r[1]
   results$f_msy[1] <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1 based on historical parameters
   results$f_ratio[1] = f_int/results$f_msy[1] #calculate the actual f_ratio from initial fishing pressure (this is basically f in time t-1) and fmsy
-  results$f_ratio_err[1] = rnorm(1, mean = results$f_ratio[1], sd = (error*results$f_ratio[1])) #simulate error in the f ratio estimate
-  
+  log_err = exp(rnorm(1, mean = results$f_ratio[1], sd = (error*results$f_ratio[1]))) #simulate error in the f ratio estimate
+  results$f_ratio_err[1] = log(log_err)
   #Decide how to change f based on the f ratio estimate with error:
   if(results$f_ratio_err[1] >= 2){
-       f_act = 0 #Close the fishery
+       results$f[1] = 0 #Close the fishery
    } 
     if(results$f_ratio_err[1] > 1 & results$f_ratio_err[1] < 2){
-       f_act = 0.9*f_int #Reduce by 10% - same thing as keeping 90% of previous fishing mortality
+       results$f[1] = 0.9*f_int #Reduce by 10% - same thing as keeping 90% of previous fishing mortality
    }  
     if(results$f_ratio_err[1] == 1){
-       f_act = f_int  #f stays the same in as last year
+       results$f[1] = f_int  #f stays the same in as last year
    }
     if(results$f_ratio_err[1] < 1){
-       f_act = 1.05*f_int #f increases by 5% from last year
+       results$f[1] = 1.05*f_int #f increases by 5% from last year
    } 
   
-  #Calculate an f with biased error:
-  results$f[1] = rnorm(1,mean = f_act, sd = (0.1*f_act)) #right now its drawing 10% error around f - want to bias this but I'm not sure how
   
   #Calculate catch in year one based on the f with error:
   results$c[1] = results$f[1] * results$b[1] 
@@ -81,7 +80,7 @@ sim_norep2 <- function(b, r, r_s, error, p, k, years){
     
     #Results for the parameters that still update every year: 
     results$r[t] = results$r[1] * (1 + (r_s*(t-1))) 
-    results$f[t] = rnorm(1,mean = f_act, sd = (0.1*f_act)) #randomly drawn f from the f_act in year 1
+    results$f[t] = results$f[1]
     results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
     results$c[t] = results$f[t] * results$b[t]
     
@@ -112,10 +111,10 @@ Create the experiment input list:
 
 #Design experiments
 list_norep2 <- list(
-  b = seq(1000, 8000, 1000),
+  b = c(1500,4000,6000),
   r = seq(0.1, .8, .05),
   r_s = 0,
-  error = seq(0.05, 0.55, 0.05),
+  error = c(0.1, 0.3, 0.5),
   p = 0.2,
   k = 10000,
   years = 100
@@ -123,6 +122,7 @@ list_norep2 <- list(
 
 input_norep2 <- list_norep2 %>%
   cross()
+
 
 
 ```
@@ -137,7 +137,7 @@ results = list()
 
 #Run the model over the input lists:
 
-for(i in 1:1320){
+for(i in 1:135){
   results[[i]] <- sim_norep2(b=input_norep2[[i]]$b, r=input_norep2[[i]]$r,
                              r_s=input_norep2[[i]]$r_s, p=input_norep2[[i]]$p,
                              k=input_norep2[[i]]$k,years=input_norep2[[i]]$years, 
@@ -159,7 +159,7 @@ col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "f_ratio_err", "i
 results_id <- list()
 
 #Loop to add ids to each experiment in the list - make sure the 1:xxx matches the number of lists in the results
-for(i in 1:1320){
+for(i in 1:135){
   dat <- as.data.frame(matrix(unlist(results[i]), ncol = 8))
   dat$id <- i
   results_id[[i]] <- dat

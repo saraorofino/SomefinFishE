@@ -26,6 +26,7 @@ Assumptions:
  - The current f at the beginning of the simulation is reached when catch is equivalent to the surplus production of the fishery at that biomass. 
  - The f calculated at the beginning of the simulation is the true fishing mortality rate of the operating fishery. 
  - Climate change is affecting the productivity of fish stocks by influeing the growth term (r)
+ - The f that comes out of the HCR is the actual f in the fishery moving forward (fisherman are adhering to that f)
  
 Goal: Simulate the initial use of FISHE, if it is only applied on 15 year intervals, focusing on the Inital Stock Assessment step of the process, with climate change reducing productivity. 
  
@@ -65,7 +66,9 @@ sim_15c <- function(b, r, r_s, error, p, k, years){
   r_calc1 <- results$r[1]
   results$f_msy[1] <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1 based on historical parameters
   results$f_ratio[1] = f_int/results$f_msy[1] #calculate the actual f_ratio from initial fishing pressure (this is basically f in time t-1) and fmsy
-  results$f_ratio_err[1] = rnorm(1, mean = results$f_ratio[1], sd = (error*results$f_ratio[1])) #simulate error in the f ratio estimate
+  log_err = exp(rnorm(1, mean = results$f_ratio[1], sd = (error*results$f_ratio[1]))) #simulate error in the f ratio estimate
+  results$f_ratio_err[1] = log(log_err)
+
   
   #Decide how to change f based on the f ratio estimate with error:
   if(results$f_ratio_err[1] >= 2){
@@ -93,10 +96,12 @@ sim_15c <- function(b, r, r_s, error, p, k, years){
     
     ##HCR decision will change how f is calculated - this step must come before calculating c 
     # Calculate fmsy in time t from current r 
-    r_calc2 <- results$r[t-1]
+    r_calc2 <- results$r[1]
     results$f_msy[t] <- fmsy(r=r_calc2, p=p)
     results$f_ratio[t] <- results$f[t-1]/results$f_msy[t-1] #the ratio of f/fmsy at the beginning of the year is based on last years f and fmsy
-    results$f_ratio_err[t] = rnorm(1, mean = results$f_ratio[t], sd = (error*results$f_ratio[t]))
+    log_err = exp(rnorm(1, mean = results$f_ratio[t], sd = (error*results$f_ratio[t]))) #simulate error in the f ratio estimate
+    results$f_ratio_err[t] = log(log_err)
+
     
     #Decisions for f this year based on the ratio with error in the previous year 
     if(results$f_ratio_err[t] >= 2){
@@ -150,10 +155,10 @@ Create the experiment input list:
 
 #Design experiments
 list_15c <- list(
-  b = seq(1000, 8000, 1000),
+  b = c(1500, 4000, 6000),
   r = seq(0.1, .8, .05),
   r_s = seq(-0.015, 0.020, 0.002), #this is a -0.5% change in productivity per year - so 10% in 20 years
-  error = seq(0.05, 0.55, 0.05),
+  error = c(0.1,0.3,0.5),
   p = 0.2,
   k = 10000,
   years = 100
@@ -175,7 +180,7 @@ results = list()
 
 #Run the model over the input lists:
 
-for(i in 1:23760){
+for(i in 1:2430){
   results[[i]] <- sim_15c(b=input_15c[[i]]$b, r=input_15c[[i]]$r,
                              r_s=input_15c[[i]]$r_s, p=input_15c[[i]]$p,
                              k=input_15c[[i]]$k,years=input_15c[[i]]$years, 
@@ -194,7 +199,7 @@ col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "f_ratio_err", "i
 results_id <- list()
 
 #Loop to add ids to each experiment in the list - make sure the 1:xxx matches the number of lists in the results
-for(i in 1:23760){
+for(i in 1:2430){
   dat <- as.data.frame(matrix(unlist(results[i]), ncol = 8))
   dat$id <- i
   results_id[[i]] <- dat
