@@ -83,9 +83,9 @@ slow_edit <- slow %>%
 r_exp1 <- slow_edit$r
 
 #Calculate MSY for all r values
-df <- data.frame(r = r_exp1, msy_val = rep(NA, 67))
+df <- data.frame(r = r_exp1, msy_val = rep(NA, 100))
 
-for(i in 1:67){
+for(i in 1:100){
   r_calc <- r_exp1[i]
   df$msy_val[i] <- msy(r = r_calc, K = 10000, p = 0.2)
 }
@@ -100,7 +100,7 @@ Graph: Now try graphing the constant MSY vs. the changing MSY with climate chang
 slow_graph2 <- ggplot(slow_combine, aes(x=year, y=msy_val)) +
   geom_line(aes(color = "Climate")) +
   geom_hline(aes(yintercept = msy_slow, color = "No Climate")) + 
-  scale_x_continuous(expand = c(0,0), limits = c(0,70), breaks = seq(0,65, by = 15)) +
+  scale_x_continuous(expand = c(0,0), limits = c(0,100.5), breaks = seq(0,100, by = 20)) +
   scale_y_continuous(expand = c(0,0), limits = c(0,350)) + 
   scale_color_manual(breaks = c("No Climate", "Climate"), values = c("tomato3", "forestgreen")) +
   labs(colour = "",
