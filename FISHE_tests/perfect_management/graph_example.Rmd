@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(RColorBrewer)
 library(here)
 
 #Read in the perfect management data:
@@ -56,6 +57,58 @@ slow_graph
 ```
 Hmm so from looking at this graph this isn't exactly what Steve was demonstrating. I'm wondering if I'm missing something in the Bmsy calculation. I thought Bmsy was just a fraction of a carrying capacity and it was the fishing mortality that gets you to msy that would change. In these runs we aren't looking at changes to K so Bmsy would be the same. Except it looks like even with decreasing r you might get higher yields under climate change... which makes no sense... but this could be due to the problem with the r calculation where the r's went negative after year 68 and started adding biomass...but even before that biomass was around 3777 which is higher than the bmsy of 3348. I wonder if a b/bmsy ratio on the y axis would be more appropriate??
 
+##Slow Method 2
+Going to try a different graph that looks at MSY
+
+First calculate the MSY for the species based on r = 0.1 and K = 10000
+```{r calc-msy}
+#Calculate MSY:
+msy <- function(r, K, p){
+  msy = (r * K) / ((p + 1) ^ ((p + 1)/p))
+  return(msy)
+}
+
+msy_slow <- msy(r = 0.1, K = 10000, p = 0.2)
+
+```
+
+Now filter the experiment 1 results to only keep the r and then calculate a new MSY for every time step. 
+```{r filter}
+#Filter the results to keep only the positive r values
+slow_edit <- slow %>% 
+  select(year, r, b) %>% 
+  filter(r > 0)
+
+#Create a vector of r values
+r_exp1 <- slow_edit$r
+
+#Calculate MSY for all r values
+df <- data.frame(r = r_exp1, msy_val = rep(NA, 67))
+
+for(i in 1:67){
+  r_calc <- r_exp1[i]
+  df$msy_val[i] <- msy(r = r_calc, K = 10000, p = 0.2)
+}
+
+#Combine the MSY into the dataframe 
+slow_combine <- full_join(slow_edit, df, by = "r")
+```
+
+Graph: Now try graphing the constant MSY vs. the changing MSY with climate change 
+```{r slow-graph2}
+
+slow_graph2 <- ggplot(slow_combine, aes(x=year, y=msy_val)) +
+  geom_line(aes(color = "Climate")) +
+  geom_hline(aes(yintercept = msy_slow, color = "No Climate")) + 
+  scale_x_continuous(expand = c(0,0), limits = c(0,70), breaks = seq(0,65, by = 15)) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,350)) + 
+  scale_color_manual(breaks = c("No Climate", "Climate"), values = c("tomato3", "forestgreen")) +
+  labs(colour = "",
+       x = "Year", y = "MSY") +
+  theme_bw() 
+
+slow_graph2
+```
 
 
 ##Intermediate
