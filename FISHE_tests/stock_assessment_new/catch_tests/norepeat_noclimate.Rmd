@@ -79,7 +79,7 @@ sim_norep2 <- function(b, r, r_s, error, p, k, years){
   for (t in 2:years) {
     
     #Results for the parameters that still update every year: 
-    results$r[t] = results$r[1] * (1 + (r_s*(t-1))) 
+    results$r[t] = results$r[t-1] + (r_s*results$r[t-1]) 
     results$f[t] = results$f[1]
     results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
     results$c[t] = results$f[t] * results$b[t]
