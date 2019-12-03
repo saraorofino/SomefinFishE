@@ -1,0 +1,56 @@
+---
+title: "analysis"
+author: "Sara Orofino"
+date: "12/2/2019"
+output: html_document
+---
+
+#{.tabset}
+
+##Setup
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#Packages
+library(tidyverse)
+library(here)
+
+#Data
+rep20c <- read_csv(file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep20_clim.csv"))
+rep20 <- read_csv(file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep20_noclim.csv"))
+rep15c <- read_csv(file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep15_clim.csv"))
+rep15 <- read_csv(file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep15_noclim.csv"))
+rep10c <- read_csv(file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep10_clim.csv"))
+rep10 <- read_csv(file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep10_noclim.csv"))
+rep5c <- read_csv(file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep5_clim.csv"))
+rep5 <- read_csv(file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep5_noclim.csv"))
+
+
+```
+
+
+##Rep20
+
+#Decision Calculation
+ - Filter four categories of climate change
+    - Most extreme negative 0.01767 (1.7% decrease per year)
+    - Mid-range negative 0.0967 (0.97% decrease per year)
+    - Lower-range negative 0.00167 (0.17% decrease per year)
+    - Mid-range positive 0.01033 (1.03% increase per year)
+ - Group simulations by error percentage and life history
+ - Count the number of times the model chose a ratio that led the manager to make the wrong decision
+ 
+```{r wrangle-20}
+#Sequence of r_s to choose categories:
+r_s = seq(-0.01767, 0.01623, 0.002)
+
+rep20c_edit <- rep20c %>%
+  filter(r_s == -0.01767 | r_s == -0.00967 | r_s == -0.00167 | r_s == 0.01033) %>% 
+  group_by(error, r_0, r_s, correct_decision) %>% 
+  tally()
+```
+
+
+
+

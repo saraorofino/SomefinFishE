@@ -17,26 +17,13 @@ perfect <- read_csv(file=file.path(here(),"/FISHE_tests/perfect_management/csv_r
 
 Example graph to show what the best possible management outcomes could be under a certain climate change velocity and magnitude.
 
-Idea is to choose three r's that may be representative of "slow", "intermediate", and "fast" growing species. I'll use the most aggressive decline in productivity (-0.015), the lower bound of our climate scenarios, and the "overfished" starting biomass (1500). But these graphs could be replicated for any starting biomass or climate change velocity. I'm picking these two because it represents a worst case scenario within our definition of these parameters.
-
-
-NOTE: All of these will need to be recalculated because they have r's that drop below zero in year 68 which then adds biomass to the water. These aren't fully accurate graphs but it's an example for code that can accomplish this type of visualization. 
-
-Part of the graph will show what perfect management is with no climate change. If the goal is MSY, this is just a horizontal line at Bmsy. Since Bmsy is some fraction of K, this won't change based on life history traits. 
-```{r calc-bmsy}
-#Calculate bmsy for the graph:
-bmsy <- function(K, p){
-  bmsy = K / ((p + 1) ^ ((1+p) / p))
-}
-
-b_msy <- bmsy(K = 10000, p = 0.2)
-```
+Idea is to choose three r's that may be representative of "slow", "intermediate", and "fast" growing species. I'll use the most aggressive decline in productivity (-0.01767), the lower bound of our climate scenarios, and the "overfished" starting biomass (1500). But these graphs could be replicated for any starting biomass or climate change velocity. I'm picking these two because it represents a worst case scenario within our definition of these parameters.
 
 ##Slow 
 Experiment 1
  - b_0 = 1500
  - r = 0.1
- - r_s = -0.015
+ - r_s = -0.01767
 
 With climate change: Perfect management under climate change calculates fmsy based on the life history traits of the species and assumes that fishing mortality in every year is equal to fmsy. 
 ```{r slow-filter}
@@ -45,20 +32,6 @@ slow <- perfect %>%
   filter(id == 1)
 
 ```
-
-Graph: The graph will have a few different levels 1) perfect management assuming no climate change (b=bmsy) and (f=fmsy) are constant through time 2) perfect management assuming climate change where b=bmsy but fmsy will change through time as r changes
-```{r slow-graph}
-
-slow_graph <- ggplot(slow, aes(x=year, y=b)) +
-  geom_line(color = "blue") +
-  geom_hline(yintercept = b_msy, color = "blue")
-
-slow_graph
-```
-Hmm so from looking at this graph this isn't exactly what Steve was demonstrating. I'm wondering if I'm missing something in the Bmsy calculation. I thought Bmsy was just a fraction of a carrying capacity and it was the fishing mortality that gets you to msy that would change. In these runs we aren't looking at changes to K so Bmsy would be the same. Except it looks like even with decreasing r you might get higher yields under climate change... which makes no sense... but this could be due to the problem with the r calculation where the r's went negative after year 68 and started adding biomass...but even before that biomass was around 3777 which is higher than the bmsy of 3348. I wonder if a b/bmsy ratio on the y axis would be more appropriate??
-
-##Slow Method 2
-Going to try a different graph that looks at MSY
 
 First calculate the MSY for the species based on r = 0.1 and K = 10000
 ```{r calc-msy}
@@ -76,7 +49,7 @@ Now filter the experiment 1 results to only keep the r and then calculate a new 
 ```{r filter}
 #Filter the results to keep only the positive r values
 slow_edit <- slow %>% 
-  select(year, r, b) %>% 
+  select(year, r) %>% 
   filter(r > 0)
 
 #Create a vector of r values
@@ -94,7 +67,7 @@ for(i in 1:100){
 slow_combine <- full_join(slow_edit, df, by = "r")
 ```
 
-Graph: Now try graphing the constant MSY vs. the changing MSY with climate change 
+Graph: Now graph the constant MSY vs. the changing MSY with climate change 
 ```{r slow-graph2}
 
 slow_graph2 <- ggplot(slow_combine, aes(x=year, y=msy_val)) +
@@ -115,7 +88,7 @@ slow_graph2
 Experiment 22
  - b_0 = 1500
  - r = 0.45
- - r_s = -0.015
+ - r_s = -0.01767
 
 With climate change: Perfect management under climate change calculates fmsy based on the life history traits of the species and assumes that fishing mortality in every year is equal to fmsy. 
 ```{r int-filter}
@@ -124,13 +97,54 @@ intermediate <- perfect %>%
   filter(id == 22)
 ```
 
+Calculate intremediate msy:
+```{r msy-int}
+msy_int <- msy(r = 0.45, K = 10000, p = 0.2)
+```
+
+Now filter the experiment 22 results to only keep the r and then calculate a new MSY for every time step. 
+```{r int-edit}
+#Filter the results to keep only the positive r values
+int_edit <- intermediate %>% 
+  select(year, r) 
+
+#Create a vector of r values
+r_exp22 <- int_edit$r
+
+#Calculate MSY for all r values
+df <- data.frame(r = r_exp22, msy_val = rep(NA, 100))
+
+for(i in 1:100){
+  r_calc <- r_exp22[i]
+  df$msy_val[i] <- msy(r = r_calc, K = 10000, p = 0.2)
+}
+
+#Combine the MSY into the dataframe 
+int_combine <- full_join(int_edit, df, by = "r")
+```
+
+Graph: Constant MSY vs. the changing MSY with climate change 
+```{r int-graph}
+
+int_graph <- ggplot(int_combine, aes(x=year, y=msy_val)) +
+  geom_line(aes(color = "Climate")) +
+  geom_hline(aes(yintercept = msy_int, color = "No Climate")) + 
+  scale_x_continuous(expand = c(0,0), limits = c(0,100.5), breaks = seq(0,100, by = 20)) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,1550), breaks = seq(0,1500, by = 500)) + 
+  scale_color_manual(breaks = c("No Climate", "Climate"), values = c("tomato3", "forestgreen")) +
+  labs(colour = "",
+       x = "Year", y = "MSY") +
+  theme_bw() 
+
+int_graph
+```
 
 
 ##Fast
 Experiment 43
  - b_0 = 1500
  - r = 0.8
- - r_s = -0.015
+ - r_s = -0.01767
 
 With climate change: Perfect management under climate change calculates fmsy based on the life history traits of the species and assumes that fishing mortality in every year is equal to fmsy. 
 ```{r fast-filter}
@@ -139,3 +153,44 @@ fast <- perfect %>%
   filter(id == 43)
 ```
 
+Calculate fast msy:
+```{r msy-int}
+msy_fast <- msy(r = 0.8, K = 10000, p = 0.2)
+```
+
+Now filter the experiment 43 results to only keep the r and then calculate a new MSY for every time step. 
+```{r int-edit}
+#Filter the results to keep only the positive r values
+fast_edit <- fast %>% 
+  select(year, r) 
+
+#Create a vector of r values
+r_exp43 <- fast_edit$r
+
+#Calculate MSY for all r values
+df <- data.frame(r = r_exp43, msy_val = rep(NA, 100))
+
+for(i in 1:100){
+  r_calc <- r_exp43[i]
+  df$msy_val[i] <- msy(r = r_calc, K = 10000, p = 0.2)
+}
+
+#Combine the MSY into the dataframe 
+fast_combine <- full_join(fast_edit, df, by = "r")
+```
+
+Graph: Constant MSY vs. the changing MSY with climate change 
+```{r int-graph}
+
+fast_graph <- ggplot(fast_combine, aes(x=year, y=msy_val)) +
+  geom_line(aes(color = "Climate")) +
+  geom_hline(aes(yintercept = msy_fast, color = "No Climate")) + 
+  scale_x_continuous(expand = c(0,0), limits = c(0,100.5), breaks = seq(0,100, by = 20)) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,2800), breaks = seq(0,2500, by = 500)) + 
+  scale_color_manual(breaks = c("No Climate", "Climate"), values = c("tomato3", "forestgreen")) +
+  labs(colour = "",
+       x = "Year", y = "MSY") +
+  theme_bw() 
+
+fast_graph
+```
