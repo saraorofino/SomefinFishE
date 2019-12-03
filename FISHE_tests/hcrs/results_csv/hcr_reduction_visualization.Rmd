@@ -1,0 +1,31 @@
+---
+title: "hcr_reduction_levels_visualizations"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+
+hcr_reductions_df <- read_csv("hcr_reduction_levels.csv")
+
+#alter dataset slightly, may be unnecessary, but we shall see 
+hcr_df_new <- hcr_reductions_df %>%
+  group_by(id) %>% 
+  mutate(initial_r = ifelse(r_0 <= .3, "slow-growing", ifelse(r_0 >.3 & r_0 <= .5, "medium-growing", "fast-growing")))
+
+hcr_plot <- ggplot(hcr_df_new, aes(x = year, y = b, group = id)) +
+  geom_line(aes(color = hcr)) +
+  theme_bw() +
+  scale_color_continuous(low = "#079EDF", high = "#B8CE55", name = "HCR") +
+  labs(title = "5 Year Adaption, Climate", y = "Biomass", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold"))
+
+hcr_plot
+ggsave(filename="rep10_noclim.jpg", plot=last_plot())
+
+```
+
