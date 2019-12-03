@@ -40,7 +40,7 @@ assess_int <- seq(5,100,5)
 `%not_in%` <- purrr::negate(`%in%`)
 ```
 
-A note about the HCR and f: the HCR decision must be applied to f in the first year otherwise f and biomass will remain constant until year 20 when the next assessment is applied. 
+A note about the HCR and f: the HCR decision must be applied to f in the first year otherwise f and biomass will remain constant until year 5 when the next assessment is applied. 
 ```{r model}
 
 #Baseline model with error around the f_ratio (f/fmsy) and no repetition of the stock assessment process for the duration of the simulation:

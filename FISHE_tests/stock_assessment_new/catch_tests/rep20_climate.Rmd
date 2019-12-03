@@ -89,7 +89,7 @@ sim_20c <- function(b, r, r_s, error, p, k, years){
   for (t in 2:years) {
     if(results$year[t] %in% assess_int){
     
-    results$r[t] = results$r[1] * (1 + (r_s*(t-1))) 
+    results$r[t] = results$r[t-1] + (r_s*results$r[t-1]) 
     
     ##HCR decision will change how f is calculated - this step must come before calculating c 
     # Calculate fmsy in time t from current r 
@@ -120,7 +120,7 @@ sim_20c <- function(b, r, r_s, error, p, k, years){
    } 
 
   if(results$year[t] %not_in% assess_int){
-    results$r[t] = results$r[1] * (1 + (r_s*(t-1)))
+    results$r[t] = results$r[t-1] + (r_s*results$r[t-1])
     results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
     results$f[t] = results$f[t-1]
     results$c[t] = results$f[t] * results$b[t]
@@ -141,7 +141,7 @@ sim_20c <- function(b, r, r_s, error, p, k, years){
 Simple results check:
 ```{r simple-check-fratio-error}
 
-check_result_20c <- sim_20c(b=6000, r=0.2, r_s=-0.005, error=0.10, p=0.2, k=10000, years=100)
+check_result_20c <- sim_20c(b=6000, r=0.2, r_s=-0.01767, error=0.10, p=0.2, k=10000, years=100)
 ```
 
 ##Model Inputs List
@@ -153,7 +153,7 @@ Create the experiment input list:
 list_20c <- list(
   b = c(1500, 4000, 6000),
   r = seq(0.1, .8, .05),
-  r_s = seq(-0.015, 0.020, 0.002), #this is a -0.5% change in productivity per year - so 10% in 20 years
+  r_s = seq(-0.01767, 0.01623, 0.002), 
   error = c(0.1, 0.3, 0.5),
   p = 0.2,
   k = 10000,
@@ -176,7 +176,7 @@ results = list()
 
 #Run the model over the input lists:
 
-for(i in 1:2430){
+for(i in 1:2295){
   results[[i]] <- sim_20c(b=input_20c[[i]]$b, r=input_20c[[i]]$r,
                              r_s=input_20c[[i]]$r_s, p=input_20c[[i]]$p,
                              k=input_20c[[i]]$k,years=input_20c[[i]]$years, 
@@ -187,16 +187,18 @@ for(i in 1:2430){
 
 
 ##Save CSV
+Re-run with new r equation and new r_s bounds. New results saved 12/2 (SO)
 ```{r save-csv}
 
 #Create the list of column names:
-col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "f_ratio_err", "id", "r_0", "error", "r_s")
+col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "f_ratio_err", "id", "r_0", "error", "r_s",
+               "ratio_cat", "ratio_err_cat", "correct_decision")
 
 #Create a new list with ids
 results_id <- list()
 
 #Loop to add ids to each experiment in the list - make sure the 1:xxx matches the number of lists in the results
-for(i in 1:2430){
+for(i in 1:2295){
   dat <- as.data.frame(matrix(unlist(results[i]), ncol = 8))
   dat$id <- i
   dat$r_0 <- rep(input_20c[[i]]$r, 100)
@@ -208,12 +210,24 @@ for(i in 1:2430){
 #Bind all the experiments together
 results_rep20c <- bind_rows(results_id)
 
+#Mutate columns to compare f_ratio to f_ratio_err 
+results_rep20c_edit <- results_rep20c %>%
+  mutate(ratio_cat = case_when(results_rep20c$V7 <= 1 ~ 0,
+                               results_rep20c$V7 > 1 & results_rep20c$V7 < 2 ~ 1,
+                               results_rep20c$V7 > 2 ~ 2)) %>% 
+  mutate(ratio_err_cat = case_when(results_rep20c$V8 <= 1 ~ 0,
+                               results_rep20c$V8 > 1 & results_rep20c$V8 < 2 ~ 1,
+                               results_rep20c$V8 > 2 ~ 2)) %>%
+  mutate(correct_decision = case_when(ratio_cat == ratio_err_cat ~ "TRUE",
+                                      ratio_cat != ratio_err_cat ~ "FALSE"))
+
 #Update the column names:
-colnames(results_rep20c) <- col_names
+colnames(results_rep20c_edit) <- col_names
 
 #Write as CSV:
 # library(here)
-# write.csv(results_rep20c, file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep20_clim.csv"),
- #          row.names = FALSE)
+# write.csv(results_rep20c_edit,
+#           file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep20_clim.csv"),
+#           row.names = FALSE)
 
 ```
