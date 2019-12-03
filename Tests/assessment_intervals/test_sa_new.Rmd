@@ -1,0 +1,47 @@
+---
+title: "test_sa_new"
+author: "Chase Brewster"
+date: "11/18/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(purrr)
+```
+
+#{.tabset}
+
+##Test f Eqn
+```{r test-f}
+
+# this equation will back out the Fishing Mortality Rate (f) that is the equilibrium result of consistent fishing pressure and certain life history parameters (r, k, b)
+
+# we will back out the actual fishing mortality rate (f) using the true initial stock biomass (b)
+# we will back out the perceived fishing mortality rate (f_err) using the stock assessment error biomass (b_err)
+r <- .315
+b <- 7200
+p <- .2
+k <- 10000
+
+f <- (r / p) * (1 - ((b / k) ^ p))
+
+f_msy <- r * (1 / (1 + p))
+
+f_err <- (r / p) * (1 - ((b_err / k) ^ p))
+
+f_ratio <- f_err/f_msy
+
+
+
+```
+
+##Test Time Intervals 
+```{r time-int}
+
+
+
+```
+

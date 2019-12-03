@@ -1,0 +1,180 @@
+---
+title: "test_hcr"
+output: html_document
+---
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(purrr)
+library(tidyverse)
+```
+
+#{.tabset}
+
+##Basic HCR Outine
+
+Goal: to create an outline code for what a HCR decision tree would look like
+
+Test 1:
+
+Target: f/fmsy < 1
+Limit: f/fmsy > 2
+
+HCRs based on the ratio of f/fmsy (f_ratio)
+f_ratio > 2 -- close the fishery (this would make f = 0) for ease of assumptions right now this would make f=0 for the rest of the simulation
+
+1 < f_ratio < 2 -- lower fishing mortality rate by 10%
+
+f_ratio = 1 -- no change to f
+
+f_ratio < 1 -- increase fishing mortality by 5%
+
+Note: the ratio is taken from FISHE but the percent increase and decrease is made up
+
+
+For the simple version I will just use a list of f_ratios that can be fed through the function to see if the decision was made that we expect.
+```{r hcr-decision-simple}
+
+#Parameters:
+f_ratio <- list(0.5, 1.0, 1.5, 1.75, 2)
+
+#Track results:
+result_hcr <- list()
+
+#Set up the HCR decision tree and test for the five values in the f_ratio list:
+for(i in 1:5){
+ if(f_ratio[[i]] >= 2){
+   result_hcr[[i]] = 0 #if ratio is above 2 record a zero in the results list
+ }
+ if(f_ratio[[i]] > 1 & f_ratio[[i]] < 2){
+    result_hcr[[i]] = 0.90 #if ratio is between target and limit record 0.90 (reduction of 10% is same as keeping 90%)
+  }   
+ if(f_ratio[[i]] == 1){
+   result_hcr[[i]] = 1
+ }   
+ if(f_ratio[[i]] < 1){
+     result_hcr[[i]] = 0.05 #record 0.05 (5% increase) if the ratio is below the target
+   }   
+}
+
+
+
+```
+This works. If we were to put it into our actual model code then we would have to adjust the outcomes of the if statements - these would instead be different equations used to calculate f at the current time step based on the ratios. Also need to caculate the ratio in each time step. 
+
+##HCR in Our Model
+
+Going to use the same decision rules as before:
+Target: f/fmsy < 1  
+Limit: f/fmsy > 2  
+
+f_ratio > 2 -- close the fishery (this would make f = 0) for ease of assumptions right now this would make f=0 for the rest of the simulation  
+
+1 < f_ratio < 2 -- lower fishing mortality rate by 10%  
+
+f_ratio = 1 -- no change to f  
+
+f_ratio < 1 -- increase fishing mortality by 5%  
+
+
+Write the HCRs in to the model:
+```{r hcr-model}
+
+sim_hcr <- function(b, r, r_s, f, error, p, k, years){
+  
+  results <- data.frame(
+    b = rep(NA, years), c = rep(NA, years), 
+    year = 1:years, r = rep(NA, years), b_err = rep(NA, years),
+    f = rep(NA, years), f_ratio = rep(NA, years)) #Setup the results dataframe 
+  
+  #Set the initial result for the outputs in year 1
+  results$b[1] = b
+  results$b_err[1] = rnorm(1, mean = results$b[1], sd = (error*results$b[1])) #simulate error in assessment
+  results$c[1] = f[1] * results$b_err[1] #using f initial and b=estimate from initial stock assessment
+  results$r[1] = r
+  fmsy <-function(r,p){r * (1 / (1+p))}
+  f_msy <- fmsy(r=r, p=p)
+  results$f[1] = f
+  results$f_ratio[1] = results$f[1]/f_msy
+  
+  #Loop the model over the specified number of years
+  for (t in 2:years) {
+    
+    results$r[t] = results$r[t-1] * (1 + (r_s*(t-1))) 
+    
+    ##HCR decision will change how f is calculated - this step must come before calculating c 
+    # Calculate fmsy in time t from current r 
+    r_calc <- results$r[t]
+    f_msy[t] <- fmsy(r=r_calc, p=p)
+    
+    #Decisions for f this year based on the ratio calucated this year 
+    if(results$f_ratio[t-1] >= 2){
+       results$f[t] = 0 #I think it makes sense for f to be zero the rest of the years but I don't know how to write that
+   } 
+    if(results$f_ratio[t-1] > 1 & results$f_ratio[t-1] < 2){
+       results$f[t] = 0.9*results$f[t-1] #Reduce by 10% - same thing as keeping 90% of previous fishing mortality
+   }  
+    if(results$f_ratio[t-1] == 1){
+       results$f[t] = results$f[t-1]  #f stays the same in as last year
+   }
+    if(results$f_ratio[t-1] < 1){
+       results$f[t] = 1.05*results$f[t-1] #f increases by 5% from last year
+   } 
+    results$f_ratio[t] <- results$f[t]/f_msy[t] #the ratio of f/fmsy this year should be based on fishing pressure and msy from that year
+    
+    #Calculate remaining results - pay attention to the order!
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    results$b_err[t] = rnorm(1, mean = results$b[t], sd = (error*results$b[t]))
+    results$c[t] = results$f[t] * results$b_err[t]
+   } 
+  
+  return(results)
+}
+```
+
+
+Test with just one set of inputs to see if model runs:
+```{r test-basic}
+
+basic_result <- sim_hcr(b=6000, r=0.2, r_s=0, f=0.3, error=0.10, p=0.2, k=10000, years=50)
+
+
+```
+Okay so that worked - now to try it with a larger list
+
+
+
+Create the input list:
+```{r hcr-inputs}
+
+# create a master list of input variables to feed into the cross() function
+
+hcr_experiment <- list(
+  b = seq(1000, 10000, 1000),
+  r = 0.2,
+  r_s = 0,
+  error = seq(0.05, 0.55, 0.05),
+  f = list(0.1, 0.5, 0.90),
+  p = 0.2,
+  k = 10000,
+  years = 100
+)
+
+hcr_cross <- hcr_experiment %>% 
+  cross()
+
+```
+
+Run it over the model:
+```{r hcr-experiment}
+
+
+for(i in 1:330){
+  results[[i]] <- sim_hcr(b=hcr_cross[[i]]$b, r=hcr_cross[[i]]$r,
+                              r_s=hcr_cross[[i]]$r_s, p=hcr_cross[[i]]$p, f=hcr_cross[[i]]$f,
+                              k=hcr_cross[[i]]$k, years=hcr_cross[[i]]$years, error = hcr_cross[[i]]$error)
+}
+
+
+```
+

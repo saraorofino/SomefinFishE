@@ -1,0 +1,51 @@
+---
+title: "Practice/example code"
+author: "Gracie White"
+date: "7/20/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+For inspiration on how to organize the repo, check out:
+
+https://github.com/jcvdav/MPA_displacement
+
+This also feels relevant: 
+https://github.com/jcvdav/cooperatives 
+
+Each function is written on a different script, so that's definitely something to consider. 
+
+```{r}
+
+#basic population growth model
+grow <- function(N, r, K, theta){
+  N <- N * exp(theta * r * (1 - N / K))
+  return(N)
+}
+
+#set values (growth rate, carrying capacity, initial population, years)
+#Theta can be a variable that we create, for example, vulnerability. That's what Chris Free did in his paper
+r <- 0.9
+K <- 1e6
+N0 <- 1000
+N <- 1000
+nyears <- 20
+theta <- (1:nyears) / 10
+
+grow(N = N0, r = r, K = K, theta = theta)
+
+#This part makes it so that the population is N-1 instead of always N
+for(i in 2:nyears){
+  N[i] <- grow(N = N[i-1], r = r, K = K, theta = theta[i])
+
+
+}
+
+plot(N)
+
+```

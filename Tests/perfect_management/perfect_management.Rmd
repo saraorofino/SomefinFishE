@@ -1,0 +1,132 @@
+---
+title: "Perfect_management"
+author: "Sara Orofino"
+date: "11/25/2019"
+output: html_document
+---
+
+#{.tabset}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+##Goal
+The goal of these runs is to simulate what "perfect management" in the face of climate change would look like. We are assuming that the goal of the fishery is to manage at MSY. Perfect management would mean harvesting each year at Fmsy where Fmsy is changing based on the change in r. 
+
+##Model
+
+Set up the model to recalculate Fmsy every year and then set the f = Fmsy
+```{r model}
+#Baseline model with error around the f_ratio (f/fmsy) and no repetition of the stock assessment process for the duration of the simulation:
+
+sim_perfect <- function(b, r, r_s, p, k, years){
+  
+  results <- data.frame(
+    b = rep(NA, years), c = rep(NA, years), 
+    year = 1:years, r = rep(NA, years), 
+    f_msy = rep(NA, years)) #Setup the results dataframe 
+  
+  #Set the initial result for the outputs in year 1
+  results$b[1] = b
+  results$r[1] = r
+  fmsy <-function(r,p){r * (1 / (1+p))} #set up the function to calculate Fmsy based on growth (r) and shape parameter (p)
+  r_calc1 <- results$r[1]
+  results$f_msy[1] <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1 based on historical parameters
+  results$c[1] = results$f_msy[1] * results$b[1] #calculate catch in year one based on f_msy
+  
+  ## Loop the model over the specified number of years
+  for (t in 2:years) {
+
+    results$r[t] = results$r[t-1] + (r_s*results$r[t-1]) 
+    
+    # Calculate fmsy in time t from current r 
+    r_calc2 <- results$r[t]
+    results$f_msy[t] <- fmsy(r=r_calc2, p=p)
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    results$c[t] = results$f_msy[t] * results$b[t]
+
+}
+  return(results)
+}
+```
+
+##Model Check
+
+Simple results check:
+```{r simple-check-fratio-error}
+
+check_result_perfect <- sim_perfect(b=6000, r=0.2, r_s=-0.005, p=0.2, k=10000, years=100)
+
+plot(check_result_perfect$b)
+```
+
+##Model Inputs List
+
+Create the experiment input list:
+```{r experiment-inputs}
+
+#Design experiments
+list_perfect <- list(
+  b = c(1500, 4000, 6000),
+  r = seq(0.1, .8, .05),
+  r_s = seq(-0.01767, 0.01623, 0.002), 
+  p = 0.2,
+  k = 10000,
+  years = 100
+)
+
+input_perfect <- list_perfect %>%
+  cross()
+
+
+```
+
+
+##Run
+
+Run the model:
+```{r run}
+
+results = list()
+
+#Run the model over the input lists:
+
+for(i in 1:765){
+  results[[i]] <- sim_perfect(b=input_perfect[[i]]$b, r=input_perfect[[i]]$r,
+                             r_s=input_perfect[[i]]$r_s, p=input_perfect[[i]]$p,
+                             k=input_perfect[[i]]$k,years=input_perfect[[i]]$years)
+}
+
+```
+
+##Save CSV
+```{r save-csv}
+
+#Create the list of column names:
+col_names <- c("b", "c", "year", "r", "f_msy", "id", "r_0", "r_s")
+
+#Create a new list with ids
+results_id <- list()
+
+#Loop to add ids to each experiment in the list - make sure the 1:xxx matches the number of lists in the results
+for(i in 1:765){
+  dat <- as.data.frame(matrix(unlist(results[i]), ncol = 5))
+  dat$id <- i
+  dat$r_0 <- rep(input_perfect[[i]]$r, 100)
+  dat$r_s <- rep(input_perfect[[i]]$r_s, 100)
+  results_id[[i]] <- dat
+}
+
+#Bind all the experiments together
+results_perfect <- bind_rows(results_id)
+
+#Update the column names:
+colnames(results_perfect) <- col_names
+
+#Write as CSV:
+library(here)
+write.csv(results_perfect, file=file.path(here(),"/FISHE_tests/perfect_management/csv_results/perfect.csv"),
+          row.names = FALSE)
+
+```

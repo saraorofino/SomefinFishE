@@ -1,0 +1,94 @@
+---
+title: "Baseline with Climate Change"
+output: html_document
+---
+
+Packages:
+```{r packages, include=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(TMB)
+```
+
+
+Define the PT surplus production model:
+```{r pt_model}
+
+# Define the function
+pt <- function(B_t, r, K, p, H){
+  B_t <- B_t + (
+    ((r/p) * B_t) *
+      (1-((B_t/K) ^ (p)))
+    ) - H
+  return(B_t)
+}
+
+```
+
+Under no management we are assuming that the harvest (H term of pt model) would be the given by F_oa*B_t
+Where: 
+ - F_oa = fishing mortality at open access (defined as 0.3*Bmsy from Gaines et al 2018)
+ - B_t = biomass at time t
+
+Define the amount of harvest equation (the H term of the pt model): 
+```{r mortality}
+F_oa <- function(r,p){
+  (r/p) * (1-
+             ((0.3 ^ (p))/
+                ((p+1) ^ (1+p)))
+           )
+}
+
+```
+
+
+Define parameters:
+```{r parameters}
+#Define initial parameters:
+#Note these values of r are made up - not actually reflective of slow vs fast growing species; need to find this still
+r_slow<- 0.1 #intrinsic growth rate for slow-growing species()
+r_med <- 0.5 #intrinsic growth rate for medium-growing species ()
+r_fast <- 0.8 #intrinsic growth rate for fast-growing species ()
+r_change <- -0.001 #yearly projected change in growth rate due to climate change
+
+K <- 10000 #carrying capacity (metric tons)
+p <- 0.2 #shape parameter 
+
+
+B0_open <- 0.1*K #Assume initial biomass is being fished at open access
+
+B_t <- B0_open #at time 1 B_t = B0
+
+
+```
+
+
+Time Loop (Slow):
+```{r slow}
+# Define timescale (t)
+tyears <- 100
+
+#Find F_oa
+F_slow <- F_oa(r=(r_slow), p=p)
+
+#Reset B_t
+B_t <- B0_open
+
+#Looped pt model:
+for(t in 2:tyears){
+  B_t[t] <- pt(B_t = B_t[t-1], r = (r_slow + r_change*t), K = K, p = p, H = F_slow*B_t[t-1])
+}
+
+plot(B_t)
+
+# save results in a data frame
+
+# create a time vector
+time <- c(1:100)
+
+# create a data frame with time vector
+results_cc_slow <- as.data.frame(time)
+
+# add model loop result vector to data frame
+results_cc_slow$B_t <- B_t
+
+```

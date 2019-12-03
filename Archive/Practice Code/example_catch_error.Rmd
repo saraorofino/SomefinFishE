@@ -1,0 +1,74 @@
+---
+title: "catch_error"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+A way to simulate error around the actual f after the HCR is made. Note this is from a no repetition simulation and under a no climate change scenario. 
+
+
+```{r}
+sim_norep2 <- function(b, r, r_s, error, p, k, years){
+  
+  results <- data.frame(
+    b = rep(NA, years), c = rep(NA, years), 
+    year = 1:years, r = rep(NA, years), f = rep(NA, years), f_bias = rep(NA, years),
+    f_msy = rep(NA, years), f_ratio = rep(NA, years), f_ratio_err = rep(NA, years)) #Setup the results dataframe 
+  
+  #Set the initial result for the outputs in year 1
+  results$b[1] = b
+  results$r[1] = r
+  f_int = (results$r[1] / p) * (1 - ((results$b[1] / k) ^ p)) #initial f assuming catch = surplus
+  
+  
+  fmsy <-function(r,p){r * (1 / (1+p))} #Calculate Fmsy 
+  r_calc1 <- results$r[1]
+  results$f_msy[1] <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1 based on historical parameters
+  results$f_ratio[1] = f_int/results$f_msy[1] #calculate the actual f_ratio from initial fishing pressure (this is basically f in time t-1) and fmsy
+  results$f_ratio_err[1] = rnorm(1, mean = results$f_ratio[1], sd = (error*results$f_ratio[1])) #simulate error in the f ratio estimate
+  
+  #Decide how to change f based on the f ratio estimate with error:
+  if(results$f_ratio_err[1] >= 2){
+       results$f[1] = 0 #Close the fishery
+   } 
+    if(results$f_ratio_err[1] > 1 & results$f_ratio_err[1] < 2){
+       results$f[1] = 0.9*f_int #Reduce by 10% - same thing as keeping 90% of previous fishing mortality
+   }  
+    if(results$f_ratio_err[1] == 1){
+       results$f[1] = f_int  #f stays the same in as last year
+   }
+    if(results$f_ratio_err[1] < 1){
+       results$f[1] = 1.05*f_int #f increases by 5% from last year
+   } 
+  
+  #Calculate an f with biased error:
+  results$f_bias[1] = rnorm(1,mean = results$f[1], sd = (0.1*results$f[1])) #right now its drawing 10% error around f - want to bias this but I'm not sure how
+  
+  #Calculate catch in year one based on the f with error:
+  results$c[1] = results$f_bias[1] * results$b[1] 
+  
+  
+  ## Loop the model over the specified number of years
+  # DO NOT REPEAT the initial stock assessment - f remains constant for the rest of the time
+  for (t in 2:years) {
+    
+    #Results for the parameters that still update every year: 
+    results$r[t] = results$r[1] * (1 + (r_s*(t-1))) 
+    results$f[t] = results$f[1]
+    results$f_bias[t] = rnorm(1,mean = results$f[1], sd = (0.1*results$f[1])) #randomly drawn f from the f_act in year 1
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    results$c[t] = results$f[t] * results$b[t]
+    
+    #Results for parameters that don't change unless it's an assessment year - for ease set these all to zero
+    results$f_msy[t] = 0
+    results$f_ratio[t] = 0
+    results$f_ratio_err[t] = 0
+    
+}
+  return(results)
+}
+```
+

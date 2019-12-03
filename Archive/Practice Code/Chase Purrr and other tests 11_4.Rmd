@@ -1,0 +1,294 @@
+---
+title: "Chase Purrr and other tests 11/4"
+author: "Chase Brewster"
+date: "11/4/2019"
+output: html_document
+---
+#{.tabset}
+
+##Packages
+```{r setup, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(purrr)
+library(repurrrsive)
+library(tidyverse)
+```
+
+##Model
+
+The basic code for our core model:
+```{r model}
+
+##############################
+# Step 1- Create df of experiments to run through the model
+## Example for setup
+
+n_experiment = 100 #Number of experiments we are running
+
+experiment <- data.frame(
+  b = runif(n_experiment, min = 1000, max = 10000),
+  r = runif(n_experiment, min = 0.015, max = 1.15),
+  r_s = runif(n_experiment, min = -0.015, max = 0.02),
+  f = runif(n_experiment, min = .1, max = .6))
+ # Here we are specifying the range for all the inputs we are varying in this model run
+
+##############################
+# Step 2 - define the simulation model
+
+sim_fishery <- function(b, f, r, r_s, p, k, years){
+
+  results <- data.frame(
+    b = rep(NA, years), c = rep(NA, years), 
+    year = 1:years, r = rep(NA, years), r_s = rep(NA, years), f = rep(NA, years)) #Setup the results dataframe
+  
+  #Set the initial result for the outputs in year 1
+  results$b[1] = b
+  results$c[1] = f * b
+  results$r[1] = r
+  results$r_s[1] = r_s
+  results$f[1] = f
+  
+  #Loop the model over the specified number of years
+  for (t in 2:years) {
+    
+    results$c[t] = results$b[t-1] * f #define catch 
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*
+      (1 - ((results$b[t-1]/k) ^ p))-results$c[t] #operating model-PT
+    results$r[t] = results$r[1] * (1 + (r_s*(t-1))) #climate model 
+    results$r_s[t] = r_s
+    results$f[t] = f
+   } 
+  
+  return(results)
+}
+
+##############################
+# Step 3 - Run the model for the experiments 
+
+results = list() #we want the results to be outputted as a list
+
+#Loop the simualation model over the experiments
+for (i in 1:n_experiment){
+  results[[i]] <- sim_fishery(b = experiment$b[i], f = experiment$f[i], r = experiment$r[i], r_s = experiment$r_s[i], p = 0.2,
+                              years = 100, k = 100000)
+}
+#Note if you're getting a data has more rows type error you forgot to run the results = list() command first 
+
+
+
+```
+
+Experiments with extracting listed outputs:
+```{r unlist-outputs}
+##Experiment with extracting the listed outputs
+data <- data.frame(b_0 = experiment$b, r_0 = experiment$r, r_s = experiment$r_s, f = experiment$f) 
+
+for(i in 1:100){
+  data$b[i] <- list(results[[i]]$b)
+  data$c[i] <- list(results[[i]]$c)
+  data$year[i] <- list(results[[i]]$year)
+}
+
+plot(x = unlist(data$year), y = unlist(data$b), type = "l")
+
+
+```
+
+##Try Purrr
+
+Experiment with using purrr:
+Here's a random and totally made up thing to test how purrr works:
+```{r basic_purrr}
+
+#Create three lists:
+x <- list(1,10,100)
+y <- list(1,2,3)
+z <- list(5,50,500)
+
+# Most basic pmap function:
+pmap(list(x,y,z), sum) #this works - it takes the first value in each of the three lists and adds them together
+
+#pmap that matches arguments by position:
+pmap(list(x,y,z), function(a,b,c) a / (b+c)) #This also works - it assigns x as a, y as b, and z as c then applies the function
+
+#pmap that matches arguements by name:
+l <- list(a = x, b = y, c = z) #creates a list of a,b,c where the values are equal to those of x,y,z
+pmap(l, function(c,b,a) a / (b + c)) #this works too and gives the exact same answers as the previous one 
+
+# This matching arguments by name seems to be most like what we would need to do 
+```
+
+##Simple Purrr 
+
+Okay now I want to try this with our data:
+
+First - Set up the model
+```{r setup_model}
+
+sim_fishery <- function(b, f, r, r_s, p, k, years){
+
+  results <- data.frame(
+    b = rep(NA, years), c = rep(NA, years), 
+    year = 1:years, r = rep(NA, years), r_s = rep(NA, years), f = rep(NA, years)) #Setup the results dataframe where the outputs will be writen for however many years our experiment is running
+  
+  #Set the initial result for the outputs in year 1
+  results$b[1] = b
+  results$c[1] = f * b
+  results$r[1] = r
+  results$r_s[1] = r_s
+  results$f[1] = f
+  
+  #Loop the model over the specified number of years
+  for (t in 2:years) {
+    
+    results$c[t] = results$b[t-1] * f #define catch
+    results$b[t] = results$b[t-1] + ((results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k)
+                                                                              ^ p)))-results$c[t] #pt model
+    results$r[t] = results$r[1] * (1 + (r_s*(t-1))) #climate model
+    results$r_s[t] = r_s
+    results$f[t] = f
+   } 
+  
+  return(results)
+}
+
+
+```
+
+Second - Set up the experiments and the initial lits
+```{r test_purrr}
+
+# Starting really simple first - create a list of 3 numbers for each of the inputs in the model:
+b <- list(1000, 5000, 10000)
+r <- list(0.015, 0.80, 1.15)
+r_s <- list(-0.015, 0, 0.02)
+f <- list(0.1, 0.3, 0.6)
+# I want to hold p, k, and years constant so I'll just make a list where all the numbers are the same
+p <- list(0.2, 0.2, 0.2) 
+k <- list(10000, 10000, 10000)
+years <- list(50, 50, 50)
+
+# Now create one big list like the example above:
+l <- list(b=b, r=r, r_s=r_s, f=f, p=p, k=k, years=years)
+# Okay I can see that l is now a list of seven variables and each variable has 3 numbers that match what I just specified above. 
+
+#Now try mapping with pmap across the sim fishery function
+test_results <- pmap(l, sim_fishery)
+#Okay that ran ... I see test_results is a list of 3 (I only gave each variable 3 numbers), where each list contains the six specified results with 50 years of observations
+
+# This appears to have worked...
+
+```
+##Purrr Test 2
+
+Okay the simple version appeared to work so I'm going to try a more complicated version of our model with purrr:
+```{r test_purrr2}
+
+n_experiment = 10 #Number of experiments we are running
+
+#If I set all the variables to one list from the beginning I shouldn't have to remake the list like I did above - but the list needs to contain all of the function's input variables even if they are constant in the model
+
+experiment <- list(
+  b = runif(n_experiment, min = 1000, max = 10000),
+  r = runif(n_experiment, min = 0.015, max = 1.15),
+  r_s = runif(n_experiment, min = -0.015, max = 0.02),
+  f = runif(n_experiment, min = .1, max = .6),
+  p = rep(0.2, n_experiment),
+  k = rep(10000, n_experiment),
+  years = rep(50, n_experiment))
+# That worked - I can see in the environment that experiment is a list of seven and within each vector there are 10 numbers for each variable; the p,k,years variables don't change
+
+test_results2 <- pmap(experiment, sim_fishery)
+# That ran but there's some issues
+```
+
+Problems with test 2:
+ - In experiments 4, 7, and 10 we get negative b values in year 2 and then NAN values for b and c after that
+ 
+Closer look at each experiment problem:
+ - Experiment 4: r_s is positive; biomass changes from 93623.03 in year 1 to -82071.12 in year 2 ...
+    - Catch in year 1/2 was 11706.25 and then -10261.84 in year 3 (and NAN after that)
+    - f is 0.125036
+    
+Troubleshoot: 
+ - if b = 93623.03 and f = 0.125036 in year 1/2 c should be 11706.25 so that seems fine
+ - if you catch 11706.25 then biomass in the next year should be negative according to the formula...
+ - the problem is that 1 - (b/k)^2 is negative b/c (b/k)^0.2 is greater than one
+    
+ - Experiment 7: r_s is positive; biomass changes from 85343.40770 in year 1 to -54.17951 in year 2 ...
+    - Catch in year 1/2 is 41068.45842 and then -26.07195 in year 3 (and NAN after that)
+    - f is 0.4812142
+    - same problem here (b/k)^0.2 is greater than one so that term becomes negative 
+    
+ - Experiment 10: r_s is positive; biomass changes from 38481.714 in year 1 to -4651.858 in year 2 ....
+    - Catch in year 1/2 is 18215.749 and then -2202.009 in year 3 (NAN after that)
+    - f is 0.4733612
+    - same problem...
+    
+    
+All experiments have the same issue where the ratio of b/k ^ p is greater than one. HOW CAN THIS BE!?!?
+
+OKAYYYYYYYYY - its because I set the upper limit of biomass to be 100,000 instead of 10,000 ....
+
+##Purrr Test 3
+
+Try again now that I fixed it!
+```{r test_purrr3}
+
+n_experiment = 10 #Number of experiments we are running
+
+experiment <- list(
+  b = runif(n_experiment, min = 1000, max = 10000),
+  r = runif(n_experiment, min = 0.015, max = 1.15),
+  r_s = runif(n_experiment, min = -0.015, max = 0.02),
+  f = runif(n_experiment, min = .1, max = .6),
+  p = rep(0.2, n_experiment),
+  k = rep(10000, n_experiment),
+  years = rep(50, n_experiment))
+
+test_results3 <- pmap(experiment, sim_fishery) #map the sim_fishery function over the experiment list
+```
+
+OKAY THAT TIME IT WORKED!!!!!!
+
+##Graphing with Purrr
+Quick trial of how to graph one of these experiments:
+```{r graph_trial}
+
+#Try binding results of the function:
+test_bind <- pmap_dfr(experiment, sim_fishery)
+
+#Okay so this outputs all the variables as columns (6 columns total) and then just lists results from the first experiment and then the second and the third all in a row
+
+# See if you can use this to graph...
+test_graph <- ggplot(test_bind, aes(x = year, y = b)) + 
+  geom_line()
+
+test_graph
+
+#Nooooo that doesn't work... need an identifying column for which experiment it is so that you can color by experiment or something like that but I don't know an efficient way to do this.
+
+
+```
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

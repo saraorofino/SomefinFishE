@@ -1,0 +1,192 @@
+---
+title: "Purrr exploration"
+author: "Gracie White"
+date: "11/4/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#{.tabset}
+
+##Setup
+```{r}
+library(tidyverse)
+library(purrr)
+library(repurrrsive)
+```
+
+##Practice
+Here's a random and totally made up thing to test purrr with cross:
+```{r basic_purrr}
+
+#Create three lists:
+x <- list(1,10,100)
+y <- list(1,2,3)
+z <- list(5,50,500)
+
+#Create a master list 
+data <- list(
+  x = x,
+  y = y,
+  z = z
+)
+
+test <- function(x,y,z){
+  result <- x+y+z
+}
+
+test_cross <- data %>%
+  cross() 
+
+results_test2 <- list()
+
+for(i in 1:27){
+  results_test2[i] <- test(x = test_cross[[i]]$x, y = test_cross[[i]]$y, z = test_cross[[i]]$z)
+}
+
+```
+Unsure how to use this with purrr but it works if you loop over the crossed dataframe.
+
+##Model
+Code for the model:
+```{r model-function}
+
+sim_fishery <- function(b, f, r, r_s, p, k, years){
+
+  results <- data.frame(
+    b = rep(NA, years), c = rep(NA, years), 
+    year = 1:years, r = rep(NA, years), r_s = rep(NA, years), f = rep(NA, years)) #Setup the results dataframe where the outputs will be writen for however many years our experiment is running
+  
+  #Set the initial result for the outputs in year 1
+  results$b[1] = b
+  results$c[1] = f * b
+  results$r[1] = r
+  results$r_s[1] = r_s
+  results$f[1] = f
+  
+  #Loop the model over the specified number of years
+  for (t in 2:years) {
+    
+    results$c[t] = results$b[t-1] * f #define catch
+    results$b[t] = results$b[t-1] + ((results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k)
+                                                                              ^ p)))-results$c[t] #pt model
+    results$r[t] = results$r[1] * (1 + (r_s*(t-1))) #climate model
+    results$r_s[t] = r_s
+    results$f[t] = f
+   } 
+  
+  return(results)
+}
+
+
+
+
+```
+
+##Simple Test
+
+Set up the initial lists and use cross to create a master list of experiments:
+```{r setup-test1}
+
+# Starting really simple first - create a list of 3 numbers for each of the inputs in the model:
+b <- list(1000, 5000, 10000)
+r <- list(0.015, 0.80, 1.15)
+r_s <- list(-0.015, 0, 0.02)
+f <- list(0.1, 0.3, 0.6)
+# I want to hold p, k, and years constant but not repeat combinations - only need to list these once
+p <- 0.2
+k <- 10000
+years <- 50
+
+#Create the master list of inputs
+inputs <- list(
+  b=b,
+  r=r,
+  r_s=r_s,
+  f=f,
+  p=p,
+  k=k,
+  years=years
+)
+
+input_cross <- inputs %>% #cross function requires the input to be one big list of things to cross reference
+  cross() #the cross function will create lists of all combinations
+```
+
+Great - that looks like what we want!!!
+
+Now we need to loop the function over the master list
+```{r loop-test1}
+
+#Create the loop over the number of lists in the crossed list input (in this case there are 81 lists)
+#What this loop does is apply the sim_fishery function over each of the 81 lists using the combination of 7 inputs inside that list as the input variables for the equation
+
+for(i in 1:81){
+  results[[i]] <- sim_fishery(b=input_cross[[i]]$b, r=input_cross[[i]]$r, r_s=input_cross[[i]]$r_s,
+                            f=input_cross[[i]]$f, p=input_cross[[i]]$p, k=input_cross[[i]]$k,
+                            years=input_cross[[i]]$years)
+}
+
+#Note: if you get a "number of items to replace isn't a multiple of replacement" you need to make sure there are double brackets around all the i values in the equation
+#Output should be a list of 81 and inside each list are 50 observations (or the number of years specified) for the six different variables being tracked in the function 
+```
+
+
+WOW THIS WORKS!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+Here's what we did:
+ - Created a master list that contained lists of each variable we wanted to test in the model.   
+ - Used the cross() function to turn that into a long master list of all possible combinations.   
+ - Looped our function over the master list (crossed list) where each list contained all the necessary input variables for one run of the model.  
+
+##More Complex Test
+
+To run a more complex test we'll use a longer initial list. The previous test used a list of 3 for b, r, r_s, and f. This time we'll use a list of 10 - varying b and f only.
+
+```{r setup-test2}
+
+#Create the master list of input variables that will feed into the cross() function
+# If the input doesn't vary in the different experiments just put one value NOT A LIST
+##Note: it isn't necessary to specify n_experiments because we only need one value for constant parameters
+experiment <- list(
+  b = seq(1000, 10000, 1000),
+  r = 0.2,
+  r_s = 0,
+  f = seq(0.01, 0.91, 0.1),
+  p = 0.2,
+  k = 10000,
+  years = 50)
+
+#Use cross() to create a master list
+experiment_cross <- experiment %>%
+  cross()
+#Creates a list of 100 'experiments' inside each experiment are the seven parameters required to run the model
+```
+
+
+Loop the function where each of the lists in experiment_cross is one experiment with all the necessary input parameters to run the model
+```{r loop-test2}
+#Set the 1:100 based on the number of lists within experiment_cross() 
+for(i in 1:100){
+  results[[i]] <- sim_fishery(b=experiment_cross[[i]]$b, r=experiment_cross[[i]]$r,
+                              r_s=experiment_cross[[i]]$r_s, f=experiment_cross[[i]]$f, 
+                              p=experiment_cross[[i]]$p, k=experiment_cross[[i]]$k,
+                              years=experiment_cross[[i]]$years)
+}
+```
+
+This does what we expect - the first 10 lists have biomass 1000-10000 by 1000 and f=0.01 for all of them. Then the next 10 experiments use the same repeating biomass scale with f=0.11 etc. 
+
+
+
+
+
+
+
+
+
+
+
