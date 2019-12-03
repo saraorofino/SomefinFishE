@@ -194,7 +194,7 @@ for(i in 1:7650){
 
 #Create the list of column names:
 
-col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "f_ratio_err", "id", "r_0", "error", "r_s", "hcr")
+col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "f_ratio_err", "id", "r_0", "error", "r_s", "hcr", "b_0")
 
 #Create a new list with ids
 results_id <- list()
@@ -207,6 +207,7 @@ for(i in 1:7650){
   dat$err <- rep(input_hcr[[i]]$error, 100)
   dat$r_s <- rep(input_hcr[[i]]$r_s, 100)
   dat$hcr <- rep(input_hcr[[i]]$hcr, 100)
+  dat$b_0 <- rep(input_hcr[[i]]$b, 100)
   results_id[[i]] <- dat
 }
 #Bind all the experiments together
