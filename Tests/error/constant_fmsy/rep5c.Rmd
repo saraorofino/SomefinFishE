@@ -1,21 +1,19 @@
 ---
-title: "rep10"
+title: "rep5-constant"
 output: html_document
 ---
 
 #{.tabset}
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(purrr)
 ```
 
-
-##Setup/Assumptions
-
+##Setup
 In this experiment we are testing only the effect of error during the detailed assessment phase of FISHE. 
 
-Experiment: Simulate an initial stock assessment in Year 1 with varied amounts of error around the estimate of f/fmsy. Make a decision on the harvest control rule based on the estimate of f/fmsy. Apply that rule to the fishing mortality in that year. Repeat this process every 10 years, applying the change in f to that year.This model includes a decrease in productivity over time due to climate change (r_s term).
+Experiment: Simulate an initial stock assessment in Year 1 with varied amounts of error around the estimate of f/fmsy. Make a decision on the harvest control rule based on the estimate of f/fmsy. Apply that rule to the fishing mortality in that year. Repeat this process every 5 years, applying the change in f to that year.This model includes a decrease in productivity over time due to climate change (r_s term).
 
 Assumptions:
  - The perceived Fmsy is constant (ie the managers are not updating their estimates of Fmsy during an assessment year)
@@ -33,19 +31,18 @@ Before running the model run the following code:
 ```{r model-setup}
 
 #create an interval vector for times that we do want to do the assessment:
-assess_int <- c(10,20,30,40,50,60,70,80,90,100)
+assess_int <- seq(5,100,5)
 
 #Write a "not contained in" function"
 `%not_in%` <- purrr::negate(`%in%`)
 ```
 
 
-
 ```{r model}
 
-#Baseline model with error around the f_ratio (f/fmsy) and repetition of the assessment process every 10 years:
+#Baseline model with error around the f_ratio (f/fmsy) and repetition of the assessment process on 5 year intervals:
 
-sim_10c <- function(b, r, r_s, error, p, k, years){
+sim_5c <- function(b, r, r_s, error, p, k, years){
   
   results <- data.frame(
     b = rep(NA, years), c = rep(NA, years), 
@@ -120,7 +117,7 @@ sim_10c <- function(b, r, r_s, error, p, k, years){
    } 
 
   if(results$year[t] %not_in% assess_int){
-    results$r[t] = results$r[t-1] + (r_s*results$r[t-1]) 
+    results$r[t] = results$r[t-1] + (r_s*results$r[t-1])
     results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
     results$f[t] = results$f[t-1]
     results$c[t] = results$f[t] * results$b[t]
@@ -136,12 +133,13 @@ sim_10c <- function(b, r, r_s, error, p, k, years){
 
 ```
 
+
 ##Model Check
 
 Simple results check:
 ```{r simple-check}
 
-check_result_10c <- sim_10c(b=6000, r=0.2, r_s=-0.01767, error=0.10, p=0.2, k=10000, years=100)
+check_result_5c <- sim_5c(b=6000, r=0.2, r_s=-0.01767, error=0.10, p=0.2, k=10000, years=100)
 ```
 
 ##Model Inputs List
@@ -150,7 +148,7 @@ Create the experiment input list:
 ```{r experiment-inputs}
 
 #Design experiments
-list_10c <- list(
+list_5c <- list(
   b = c(1500, 4000, 6000),
   r = seq(0.1, .8, .05),
   r_s = seq(-0.01767, 0.01623, 0.002), 
@@ -160,7 +158,7 @@ list_10c <- list(
   years = 100
 )
 
-input_10c <- list_10c %>%
+input_5c <- list_5c %>%
   cross()
 
 
@@ -177,10 +175,10 @@ results = list()
 #Run the model over the input lists:
 
 for(i in 1:2295){
-  results[[i]] <- sim_10c(b=input_10c[[i]]$b, r=input_10c[[i]]$r,
-                             r_s=input_10c[[i]]$r_s, p=input_10c[[i]]$p,
-                             k=input_10c[[i]]$k,years=input_10c[[i]]$years, 
-                             error = input_10c[[i]]$error)
+  results[[i]] <- sim_5c(b=input_5c[[i]]$b, r=input_5c[[i]]$r,
+                             r_s=input_5c[[i]]$r_s, p=input_5c[[i]]$p,
+                             k=input_5c[[i]]$k,years=input_5c[[i]]$years, 
+                             error = input_5c[[i]]$error)
 }
 
 ```
@@ -190,6 +188,7 @@ for(i in 1:2295){
 ```{r save-csv}
 
 #Create the list of column names:
+
 col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "f_ratio_err", "id", "r_0", "error", "r_s",
                "ratio_cat", "ratio_err_cat", "correct_decision")
 
@@ -200,33 +199,33 @@ results_id <- list()
 for(i in 1:2295){
   dat <- as.data.frame(matrix(unlist(results[i]), ncol = 8))
   dat$id <- i
-  dat$r_0 <- rep(input_10c[[i]]$r, 100)
-  dat$err <- rep(input_10c[[i]]$error, 100)
-  dat$r_s <- rep(input_10c[[i]]$r_s, 100)
+  dat$r_0 <- rep(input_5c[[i]]$r, 100)
+  dat$err <- rep(input_5c[[i]]$error, 100)
+  dat$r_s <- rep(input_5c[[i]]$r_s, 100)
   results_id[[i]] <- dat
 }
 
 #Bind all the experiments together
-results_rep10c <- bind_rows(results_id)
+results_rep5c <- bind_rows(results_id)
 
 #Mutate columns to compare f_ratio to f_ratio_err 
-results_rep10c_edit <- results_rep10c %>% 
-  mutate(ratio_cat = case_when(results_rep10c$V7 <= 1 ~ 0,
-                               results_rep10c$V7 > 1 & results_rep10c$V7 < 2 ~ 1,
-                               results_rep10c$V7 > 2 ~ 2)) %>% 
-  mutate(ratio_err_cat = case_when(results_rep10c$V8 <= 1 ~ 0,
-                               results_rep10c$V8 > 1 & results_rep10c$V8 < 2 ~ 1,
-                               results_rep10c$V8 > 2 ~ 2)) %>%
+results_rep5c_edit <- results_rep5c %>%
+  mutate(ratio_cat = case_when(results_rep5c$V7 <= 1 ~ 0,
+                               results_rep5c$V7 > 1 & results_rep5c$V7 < 2 ~ 1,
+                               results_rep5c$V7 > 2 ~ 2)) %>% 
+  mutate(ratio_err_cat = case_when(results_rep5c$V8 <= 1 ~ 0,
+                               results_rep5c$V8 > 1 & results_rep5c$V8 < 2 ~ 1,
+                               results_rep5c$V8 > 2 ~ 2)) %>%
   mutate(correct_decision = case_when(ratio_cat == ratio_err_cat ~ "yes",
                                       ratio_cat != ratio_err_cat ~ "no"))
 
 #Update the column names:
-colnames(results_rep10c_edit) <- col_names
+colnames(results_rep5c_edit) <- col_names
 
 #Write as CSV:
 # library(here)
-# write.csv(results_rep10c_edit,
-#           file=file.path(here(),"/Results/error/rep10_constant.csv"),
+# write.csv(results_rep5c_edit,
+#           file=file.path(here(),"/Results/error/rep5_constant.csv"),
 #           row.names = FALSE)
 
 ```
