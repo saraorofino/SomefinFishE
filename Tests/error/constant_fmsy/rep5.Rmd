@@ -184,7 +184,7 @@ for(i in 1:2295){
 ```
 
 ##Save CSV
-Re-run with new r equation and new r_s bounds. New results saved 12/2 (SO)
+
 ```{r save-csv}
 
 #Create the list of column names:
