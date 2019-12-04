@@ -15,16 +15,35 @@ library(purrr)
 
 In this experiment we are testing only the effect of error during the detailed assessment phase of FISHE. 
 
-Experiment: Simulate an initial stock assessment in Year 1 with varied amounts of error around the estimate of f/fmsy. Make a decision on the harvest control rule based on the estimate of f/fmsy. Apply that rule to the fishing mortality in that year. Repeat this process every 5 years, applying the change in f to that year.This model includes a decrease in productivity over time due to climate change (r_s term).
+Experiment: Simulate different levels of error around the detailed assessment phase of FISHE and evaluate how often managers make the wrong decision under different magnitudes and velocities of climate change.
+
+In this experiment, the true Fmsy is adjusting over time as climate change alters productivity and during assessment years the managers are updating their estimates of Fmsy to reflect productivity changes. 
+
+There are three errors being simulated representing the different tiers of data
+  - Tier 1: Less than one year of data; high uncertainty --> error = 0.5
+  - Tier 2: One year of data; intermediate uncertainty --> error = 0.3
+  - Tier 3: More than one year of data; lower uncertainty --> error = 0.1
+
+The "assessment" period of FishE in this model is every 5 years.
+
+The harvest control rule is:
+  - f_ratio < 1 increase f by 5%
+  - f_ratio == 1 f remains the same as previous year
+  - 1 < f_ratio < 2 f decreases by 10%
+  - f_ratio > 2 fishery shuts down (f goes to 0)
+    Note: In this simulation there is no reopening of fisheries once the manager decides to shut them down
+
+The three levels of error (0.1, 0.3 and 0.5) will be tested over a range of climate impacts, initial growth rates, and initial biomasses.
 
 Assumptions:
- - The perceived Fmsy is updating (ie the managers are updating their estimates of Fmsy during an assessment year to reflect changes in productivity)
- - Fisheries represented in the model have no current management. Initial biomass in the simulation is therefore representative of the equilibrium that the fishery has reached over the years due to some level of fishing mortality (f). 
- - Fishing mortality and f/fmsy ratios are calculated at the beginning of each year and the change in f is applied to fishing in that same year
- - The current f at the beginning of the simulation is reached when catch is equivalent to the surplus production of the fishery at that biomass. 
- - The f calculated at the beginning of the simulation is the true fishing mortality rate of the operating fishery. 
- - Climate change is affecting the productivity of fish stocks by influeing the growth term (r)
- - The f that comes out of the HCR is the actual f in the fishery moving forward (fisherman are adhering to that f)
+  - Fisheries represented in the model have no current management. Initial biomass in the simulation is therefore representative of the equilibrium that the fishery has reached over the years due to some level of fishing mortality (f). 
+  - Fishing mortality and f/fmsy ratios are calculated at the beginning of each year and the change in f is applied to fishing in that same year
+  - The current f at the beginning of the simulation is reached when catch is equivalent to the surplus production of the fishery at that biomass. 
+  - The f calculated at the beginning of the simulation is the true fishing mortality rate of the operating fishery. 
+  - Climate change is affecting the productivity of fish stocks by influeing the growth term (r)
+  - The f that comes out of the HCR is the actual f in the fishery moving forward (fisherman are adhering to that f)
+
+Goal: Simulate the effect of error around the detailed assessment in the face of climate change.
 
 
 ##Model
