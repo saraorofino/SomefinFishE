@@ -62,7 +62,7 @@ assess_int <- seq(5,100,5)
 ```{r model}
 
 #Baseline model with error around the f_ratio (f/fmsy) and repetition of the assessment process on 5 year intervals
-##Fmsy is updating with climate change 
+##Fmsy is updating with climate change and managers are updating perceived Fmsy during assessment years
 
 sim_5u <- function(b, r, r_s, error, p, k, years){
   
@@ -120,7 +120,7 @@ sim_5u <- function(b, r, r_s, error, p, k, years){
     
     #Decisions for f this year based on the ratio with error in the previous year 
     if(results$f_ratio_err[t] >= 2){
-       results$f[t] = 0 #I think it makes sense for f to be zero the rest of the years but I don't know how to write that
+       results$f[t] = 0 
    } 
     if(results$f_ratio_err[t] > 1 & results$f_ratio_err[t] < 2){
        results$f[t] = 0.9*results$f[t-1] #Reduce by 10% - same thing as keeping 90% of previous fishing mortality

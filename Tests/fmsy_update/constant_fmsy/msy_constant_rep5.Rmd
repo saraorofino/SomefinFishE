@@ -55,6 +55,8 @@ assess_int <- seq(5,100,5)
  
 ```{r model}
 
+##Fmsy is updating with climate change but managers are NOT updating perceived Fmsy 
+
 sim_msy5c <- function(b, r, r_s, error, p, k, years){ 
   
   results <- data.frame(
@@ -239,7 +241,7 @@ colnames(results_msy5c_edit) <- col_names
 #Write as CSV:
 # library(here)
 #  write.csv(results_msy5c_edit,
-#            file=file.path(here(),"/Results/fmsy_update/msy_rep5_constant.csv"),
+#            file=file.path(here(),"/Results/fmsy_update/msy_constant_rep5.csv"),
 #            row.names = FALSE)
 
 ```

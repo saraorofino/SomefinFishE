@@ -54,6 +54,8 @@ assess_int <- seq(10,100,10)
  
 ```{r model}
 
+##Fmsy is updating with climate change but managers are NOT updating perceived Fmsy 
+
 sim_msy10c <- function(b, r, r_s, error, p, k, years){ 
   
   results <- data.frame(
