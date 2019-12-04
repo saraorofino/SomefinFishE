@@ -5,8 +5,11 @@ output: html_document
 
 
 #{.tabset}
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(purrr)
 ```
 
 
