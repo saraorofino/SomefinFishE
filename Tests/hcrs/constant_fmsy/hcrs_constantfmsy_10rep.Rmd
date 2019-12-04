@@ -135,9 +135,10 @@ sim_hcr <- function(b, r, r_s, error, p, k, years, hcr){ #hcr term is added into
     results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
     results$f[t] = results$f[t-1]
     results$c[t] = results$f[t] * results$b[t]
-    results$f_msy[t] = results$f_msy[t-1]
+    r_calc3 <- results$r[t]
+    results$f_msy[t] = fmsy(r=r_calc3, p=p) #Fmsy needs to update every year to capture productivity changes
     results$f_ratio_err[t] = results$f_ratio_err[t-1]
-    results$f_ratio[t] = results$f_ratio[t-1]
+    results$f_ratio[t] = results$f[t-1]/results$f_msy[t-1]
     results$f_ratio_p[t] = results$f_ratio_p[t-1]
     
   }
