@@ -1,5 +1,5 @@
 ---
-title: "analysis"
+title: "error_analysis"
 author: "Sara Orofino"
 date: "12/2/2019"
 output: html_document
@@ -17,41 +17,86 @@ library(tidyverse)
 library(here)
 
 #Data
-rep20c <- read_csv(file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep20_clim.csv"))
-rep20 <- read_csv(file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep20_noclim.csv"))
-rep15c <- read_csv(file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep15_clim.csv"))
-rep15 <- read_csv(file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep15_noclim.csv"))
-rep10c <- read_csv(file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep10_clim.csv"))
-rep10 <- read_csv(file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep10_noclim.csv"))
-rep5c <- read_csv(file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep5_clim.csv"))
-rep5 <- read_csv(file=file.path(here(),"/FISHE_tests/stock_assessment_new/catch_tests/csv_results/rep5_noclim.csv"))
-
+err_rep5c <- read_csv(file=file.path(here(),"/Results/error/error_constant_rep5.csv"))
+err_rep5u <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep5.csv"))
+err_rep10c <- read_csv(file=file.path(here(),"/Results/error/error_constant_rep10.csv"))
+err_rep10u <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep10.csv"))
 
 ```
 
 
-##Rep20
-
-#Decision Calculation
+##Decision Calculation
  - Filter four categories of climate change
     - Most extreme negative 0.01767 (1.7% decrease per year)
     - Mid-range negative 0.0967 (0.97% decrease per year)
     - Lower-range negative 0.00167 (0.17% decrease per year)
     - Mid-range positive 0.01033 (1.03% increase per year)
+ - Filter for assessment years ONLY
  - Group simulations by error percentage and life history
  - Count the number of times the model chose a ratio that led the manager to make the wrong decision
- 
-```{r wrangle-20}
+
+#Rep5
+Data wrangling for 5 year intervals where Fmsy updating with climate change:
+```{r wrangle-5u}
+
 #Sequence of r_s to choose categories:
 r_s = seq(-0.01767, 0.01623, 0.002)
 
-rep20c_edit <- rep20c %>%
+#Assessment years:
+assess_5 <- seq(5,100,5)
+
+rep5u <- err_rep5u %>%
   filter(r_s == -0.01767 | r_s == -0.00967 | r_s == -0.00167 | r_s == 0.01033) %>% 
-  group_by(error, r_0, r_s, correct_decision) %>% 
-  tally()
+  filter(year == 1 | year %in% assess_5) %>% 
+  filter(decision_made == "yes") %>% 
+  group_by(r_s, r_0, error, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5u" = n) %>% 
+  spread(key = "correct_decision", value = "count_5u") %>%
+  mutate(total_decisions_made = sum(no + yes)) %>% 
+  mutate(prop_5u = no/total_decisions_made)
+
+
+#Change r_0 into three categories - slow, intermediate, and fast
+rep5u_fail <- rep5u %>% 
+  mutate("r0_cat" = ifelse(r_0 <= 0.3, "slow", ifelse(r_0 > 0.3 & r_0 <= 0.5, "intermediate", "fast")))
+
+#Now I want to transform the continuous variables (r_s and error) into factors
+rep5u_fail$r_s <- as.factor(rep5u_fail$r_s)
+rep5u_fail$error <- as.factor(rep5u_fail$error)
+
 ```
 
+#Rep10
+Data wrangling for 10 year intervals where Fmsy is updating with climate change:
+```{r wrangle-10u}
+
+#Assessment years:
+assess_10 <- seq(10,100,10)
+
+rep10u <- err_rep10u %>%
+  filter(r_s == -0.01767 | r_s == -0.00967 | r_s == -0.00167 | r_s == 0.01033) %>% 
+  filter(year == 1 | year %in% assess_10) %>% 
+  group_by(r_s, r_0, error, correct_decision) %>% 
+  tally() %>% 
+  rename("count_10u" = n) %>% 
+  mutate(prop_10u = count_10u/33)
+```
+
+#Visualizations
+
+Experiment with a few ways of visualizing this data
+
+#Rep5
+
+First try proportion of failures on the y-axis with error categories on the x-axis for updating Fmsy
+```{r rep5-viz1}
+
+fail5 <- ggplot(rep5u_fail, aes(x = error, y= prop_5u)) +
+  geom_jitter(aes(size = r_s, color = r0_cat), alpha = 0.8, width = 0.25)
+
+fail5
 
 
+```
 
-Probably gonna need to do this for just 10 and 5 years
