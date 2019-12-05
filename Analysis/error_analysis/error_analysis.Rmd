@@ -54,16 +54,12 @@ rep5u <- err_rep5u %>%
   rename("count_5u" = n) %>% 
   spread(key = "correct_decision", value = "count_5u") %>%
   mutate(total_decisions_made = sum(no + yes)) %>% 
-  mutate(prop_5u = no/total_decisions_made)
-
-
-#Change r_0 into three categories - slow, intermediate, and fast
-rep5u_fail <- rep5u %>% 
+  mutate(prop_5u = no/total_decisions_made) %>% 
   mutate("r0_cat" = ifelse(r_0 <= 0.3, "slow", ifelse(r_0 > 0.3 & r_0 <= 0.5, "intermediate", "fast")))
 
 #Now I want to transform the continuous variables (r_s and error) into factors
-rep5u_fail$r_s <- as.factor(rep5u_fail$r_s)
-rep5u_fail$error <- as.factor(rep5u_fail$error)
+rep5u$r_s <- as.factor(rep5u$r_s)
+rep5u$error <- as.factor(rep5u$error)
 
 ```
 
@@ -74,16 +70,33 @@ Data wrangling for 10 year intervals where Fmsy is updating with climate change:
 #Assessment years:
 assess_10 <- seq(10,100,10)
 
+
 rep10u <- err_rep10u %>%
   filter(r_s == -0.01767 | r_s == -0.00967 | r_s == -0.00167 | r_s == 0.01033) %>% 
   filter(year == 1 | year %in% assess_10) %>% 
+  filter(decision_made == "yes") %>% 
   group_by(r_s, r_0, error, correct_decision) %>% 
   tally() %>% 
   rename("count_10u" = n) %>% 
-  mutate(prop_10u = count_10u/33)
+  spread(key = "correct_decision", value = "count_10u")
+
+#There are a few scenarios where no wrong decisions are made - change these values from NA to zero
+#note you need to do this before calculating any other values (ie total decisions or proportions)
+rep10u$no[is.na(rep10u$no)] <- 0
+
+rep10u_fail <- rep10u %>% 
+  mutate(total_decisions_made = sum(no + yes)) %>% 
+  mutate(prop_10u = no/total_decisions_made) %>% 
+  mutate("r0_cat" = ifelse(r_0 <= 0.3, "slow", ifelse(r_0 > 0.3 & r_0 <= 0.5, "intermediate", "fast")))
+
+#Now I want to transform the continuous variables (r_s and error) into factors
+rep10u_fail$r_s <- as.factor(rep10u_fail$r_s)
+rep10u_fail$error <- as.factor(rep10u_fail$error)
+
+
 ```
 
-#Visualizations
+##Visualizations
 
 Experiment with a few ways of visualizing this data
 
@@ -92,7 +105,7 @@ Experiment with a few ways of visualizing this data
 First try proportion of failures on the y-axis with error categories on the x-axis for updating Fmsy
 ```{r rep5-viz1}
 
-fail5 <- ggplot(rep5u_fail, aes(x = error, y= prop_5u)) +
+fail5 <- ggplot(rep5u, aes(x = error, y= prop_5u)) +
   geom_jitter(aes(size = r_s, color = r0_cat), alpha = 0.8, width = 0.25)
 
 fail5
@@ -100,3 +113,15 @@ fail5
 
 ```
 
+#Rep10
+
+First try proportion of failures on the y-axis with error categories on the x-axis for updating Fmsy
+```{r rep10-viz1}
+
+fail10 <- ggplot(rep10u_fail, aes(x = error, y= prop_10u)) +
+  geom_jitter(aes(size = r_s, color = r0_cat), alpha = 0.8, width = 0.25)
+
+fail10
+
+
+```
