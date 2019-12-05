@@ -214,7 +214,7 @@ for(i in 1:1224){
 
 #Create the list of column names:
 col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "f_ratio_err", "id", "r_0", "error", "r_s",
-               "ratio_cat", "ratio_err_cat", "correct_decision")
+               "ratio_cat", "ratio_err_cat", "decision_made", "correct_decision")
 
 #Create a new list with ids
 results_id <- list()
@@ -234,15 +234,20 @@ results_rep10u <- bind_rows(results_id)
 
 #Mutate columns to compare f_ratio to f_ratio_err 
 results_rep10u_edit <- results_rep10u %>% 
-  mutate(ratio_cat = case_when(results_rep10u$V7 <= 1 ~ 0,
-                               results_rep10u$V7 > 1 & results_rep10u$V7 < 2 ~ 1,
-                               results_rep10u$V7 > 2 ~ 2)) %>% 
-  mutate(ratio_err_cat = case_when(results_rep10u$V8 <= 1 ~ 0,
-                               results_rep10u$V8 > 1 & results_rep10u$V8 < 2 ~ 1,
-                               results_rep10u$V8 > 2 ~ 2)) %>%
-  mutate(correct_decision = case_when(ratio_cat == ratio_err_cat ~ "yes",
-                                      ratio_cat != ratio_err_cat ~ "no"))
-
+  mutate(ratio_cat = case_when(results_rep10u$V7 == 0 ~ 0,
+                               results_rep10u$V7 <= 1 & results_rep10u$V7 != 0 ~ 1,
+                               results_rep10u$V7 > 1 & results_rep10u$V7 < 2 ~ 2,
+                               results_rep10u$V7 > 2 ~ 3)) %>% 
+  mutate(ratio_err_cat = case_when(results_rep10u$V8 == 0 ~ 0,
+                               results_rep10u$V8 > 0 & results_rep10u$V8 <= 1 ~ 1,
+                               results_rep10u$V8 > 1 & results_rep10u$V8 < 2 ~ 2,
+                               results_rep10u$V8 > 2 ~ 3)) %>%
+  mutate(decision_made = case_when(ratio_cat == ratio_err_cat & ratio_cat !=0 ~ "yes",
+                                      ratio_cat != ratio_err_cat ~ "yes",
+                                      ratio_cat == ratio_err_cat & ratio_cat == 0 ~ "no")) %>% 
+  mutate(correct_decision = case_when(ratio_cat == ratio_err_cat & ratio_cat !=0 ~ "yes",
+                                      ratio_cat != ratio_err_cat ~ "no",
+                                      ratio_cat == ratio_err_cat & ratio_cat == 0 ~ "fail"))
 #Update the column names:
 colnames(results_rep10u_edit) <- col_names
 
