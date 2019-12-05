@@ -1,0 +1,233 @@
+---
+title: "ai_constantfmsy_0rep"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(purrr)
+library(tidyr)
+
+```
+
+#{.tabset}
+
+##Setup/Assumptions
+Experiment: The purpose of this experiment is to systematically test the effectiveness of reassessing a fishery using the FishE process on different time intervals.
+
+The "assessment" period of FishE in this model is once in year 1 and never again.
+
+In this experiment, the true Fmsy is adjusting over time as climate change alters productivity. However, the management decision is based on a Fmsy that is not adjusted to climate change - it is based on the initial Fmsy that would be calculated in the year 1 assessment. 
+
+The error in the F/Fmsy ratio is .1.
+
+The test will cover a range of climate impacts, initial growth rates, and initial biomasses, with a 10% reduction hcr.
+
+Assumptions: 
+ - Fisheries represented in the model have no current management. Initial biomass in the simulation is therefore representative of the equilibrium that the fishery has reached over the years due to some level of fishing mortality (f). 
+ - Fishing mortality and f/fmsy ratios are calculated at the beginning of each year and the change in f is applied to fishing in that same year
+ - The current f at the beginning of the simulation is reached when catch is equivalent to the surplus production of the fishery at that biomass. 
+ - The f calculated at the beginning of the simulation is the true fishing mortality rate of the operating fishery. 
+ - Climate change is affecting the productivity of fish stocks by influeing the growth term (r)
+ - The f that comes out of the HCR is the actual f in the fishery moving forward (fisherman are adhering to that f)
+ 
+Goal: Simulate the effect of different assessment intervals in the face of climate change.
+
+
+##Model
+
+Before running the model run the following code:
+```{r setup}
+
+#create an interval vector for times that we do want to do the assessment:
+assess_int <- c(1)
+
+#Write a "not contained in" function"
+`%not_in%` <- purrr::negate(`%in%`)
+```
+
+A note about the HCR and f: the HCR decision must be applied to f in the first year otherwise f and biomass will remain constant until year NA when the next assessment is applied. 
+```{r model}
+
+#Baseline model with error around the f_ratio (f/fmsy) and no repetition of the assessment process:
+
+sim_ai <- function(b, r, r_s, error, p, k, years, hcr){ 
+  
+  results <- data.frame(
+    b = rep(NA, years), c = rep(NA, years), 
+    year = 1:years, r = rep(NA, years), f = rep(NA, years),
+    f_msy = rep(NA, years), f_ratio = rep(NA, years), f_ratio_p = rep(NA, years), f_ratio_err = rep(NA, years)) #Setup the results dataframe 
+  
+  #Set the initial result for the outputs in year 1
+  results$b[1] = b
+  results$r[1] = r
+  f_int = (results$r[1] / p) * (1 - ((results$b[1] / k) ^ p)) #initial f assuming catch = surplus
+  
+  
+  fmsy <-function(r,p){r * (1 / (1+p))} #set up the function to calculate Fmsy based on growth (r) and shape parameter (p)
+  r_calc1 <- results$r[1]
+  results$f_msy[1] <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1 based on historical parameters
+  results$f_ratio[1] = f_int/results$f_msy[1] #calculate the actual f_ratio from initial fishing pressure (this is basically f in time t-1) and fmsy
+  results$f_ratio_p[1] = results$f_ratio[1] #this is the perceived f ratio by the fisheries managers - with climate change, this perceived ratio will not have an adjusted fmsy as productivity changes
+  log_err = exp(rnorm(1, mean = results$f_ratio_p[1], sd = (error*results$f_ratio_p[1]))) #simulate error in the f ratio estimate based on the f ratio perceived by fisheries managers
+  results$f_ratio_err[1] = log(log_err)
+
+  
+  #Decide how to change f based on the f ratio estimate with error:
+  if(results$f_ratio_err[1] >= 2){
+       results$f[1] = 0 #Close the fishery
+   } 
+    if(results$f_ratio_err[1] > 1 & results$f_ratio_err[1] < 2){
+       results$f[1] = hcr*f_int #Reduce by the hcr (10%)
+   }  
+    if(results$f_ratio_err[1] == 1){
+       results$f[1] = f_int  #f stays the same in as last year
+   }
+    if(results$f_ratio_err[1] < 1){
+       results$f[1] = 1.05*f_int #f increases by 5% from last year
+   } 
+  
+  #Calculate catch in year one based on the new f:
+  results$c[1] = results$f[1] * results$b[1] 
+  
+  ## Loop the model over the specified number of years
+  # For this run, there will be no repeating decision - make the HCR decision based on the previous years data and apply the f to the current assessment year, this f remains constant until next assessment
+  for (t in 2:years) {
+    if(results$year[t] %in% assess_int){
+    
+    results$r[t] = results$r[t-1] + (r_s*results$r[t-1])
+    
+    ##HCR decision will change how f is calculated - this step must come before calculating c 
+    # Calculate fmsy in time t from current r 
+    r_calc2 <- results$r[t]
+    results$f_msy[t] <- fmsy(r=r_calc2, p=p)
+    results$f_ratio[t] <- results$f[t-1]/results$f_msy[t-1] #the ratio of f/fmsy at the beginning of the year is based on last years f and fmsy
+    results$f_ratio_p[t] <- results$f[t-1]/results$f_msy[1] #the perceived f ratio is based on the original fmsy calculation
+    log_err = exp(rnorm(1, mean = results$f_ratio_p[t], sd = (error*results$f_ratio_p[t]))) #simulate error in the perceived f ratio estimate
+    results$f_ratio_err[t] = log(log_err)
+
+    
+    #Decisions for f this year based on the ratio with error in the previous year 
+    if(results$f_ratio_err[t] >= 2){
+       results$f[t] = 0 
+   } 
+    if(results$f_ratio_err[t] > 1 & results$f_ratio_err[t] < 2){
+       results$f[t] = hcr*results$f[t-1] # hcr is defined by the hcr that is being tested in each run
+   }  
+    if(results$f_ratio_err[t] == 1){
+       results$f[t] = results$f[t-1]  #f stays the same in as last year
+   }
+    if(results$f_ratio_err[t] < 1){
+       results$f[t] = 1.05*results$f[t-1] #f increases by 5% from last year
+   } 
+    
+    
+    #Calculate remaining results - pay attention to the order!
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    results$c[t] = results$f[t] * results$b[t]
+   } 
+
+  if(results$year[t] %not_in% assess_int){
+    results$r[t] = results$r[t-1] + (r_s*results$r[t-1])
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    results$f[t] = results$f[t-1]
+    results$c[t] = results$f[t] * results$b[t]
+    r_calc3 <- results$r[t]
+    results$f_msy[t] = fmsy(r=r_calc3, p=p) #Fmsy needs to update every year to capture productivity changes
+    results$f_ratio_err[t] = results$f_ratio_err[t-1]
+    results$f_ratio[t] = results$f[t-1]/results$f_msy[t-1]
+    results$f_ratio_p[t] = results$f_ratio_p[t-1]
+    
+  }
+}
+  return(results)
+}
+
+
+```
+
+##Model Check
+
+Simple results check:
+```{r simple-check}
+
+check_result_ai <- sim_ai(b=1500, r=0.2, r_s=-0.005, error=0.10, p=0.2, k=10000, years=100, hcr = .9)
+```
+
+##Model Inputs List
+
+Create the experiment input list:
+```{r experiment-inputs}
+
+#Design experiments
+list_ai <- list(
+  b = c(1500, 4000, 6000),
+  r = seq(0.1, .8, .1),
+  r_s = seq(-0.01767, 0.01623, 0.002),
+  error = 0.1,
+  p = 0.2,
+  k = 10000,
+  years = 100,
+  hcr = .9
+)
+
+input_ai <- list_ai %>%
+  cross()
+
+
+```
+
+
+##Run
+
+Run the model:
+```{r run}
+
+results = list()
+
+#Run the model over the input lists:
+
+for(i in 1:408){
+  results[[i]] <- sim_ai(b=input_ai[[i]]$b, r=input_ai[[i]]$r,
+                             r_s=input_ai[[i]]$r_s, p=input_ai[[i]]$p,
+                             k=input_ai[[i]]$k,years=input_ai[[i]]$years, 
+                             error = input_ai[[i]]$error, hcr = input_ai[[i]]$hcr)
+}
+
+```
+
+##Save CSV
+```{r save-csv}
+
+#Create the list of column names:
+
+col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "f_ratio_p", "f_ratio_err", "id", "r_0", "error", "r_s", "hcr", "b_0")
+
+#Create a new list with ids
+results_id <- list()
+
+#Loop to add ids to each experiment in the list - make sure the 1:xxx matches the number of lists in the results
+for(i in 1:408){
+  dat <- as.data.frame(matrix(unlist(results[i]), ncol = 9))
+  dat$id <- i
+  dat$r_0 <- rep(input_hcr[[i]]$r, 100)
+  dat$err <- rep(input_hcr[[i]]$error, 100)
+  dat$r_s <- rep(input_hcr[[i]]$r_s, 100)
+  dat$hcr <- rep(input_hcr[[i]]$hcr, 100)
+  dat$b_0 <- rep(input_hcr[[i]]$b, 100)
+  results_id[[i]] <- dat
+}
+#Bind all the experiments together
+results_ai <- bind_rows(results_id)
+
+#Update the column names:
+colnames(results_ai) <- col_names
+
+#Write as CSV:
+library(here)
+ write.csv(results_ai, file=file.path(here(),"/Tests/assessment_intervals/results_csv/ai_constantyfmsy_0rep.csv"),
+           row.names = FALSE)
+
+```
