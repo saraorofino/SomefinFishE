@@ -1,0 +1,76 @@
+---
+title: "hcrs_analysis"
+author: "Chase"
+date: "12/5/2019"
+output: html_document
+---
+
+#{.tabset}
+
+##Setup
+```{r packages_readcsv}
+#Packages
+library(tidyverse)
+library(here)
+
+#Data
+hcr_rep5c <- read_csv(file=file.path(here(),"/Results/hcrs/hcrs_constantfmsy_5rep.csv"))
+hcr_rep5u <- read_csv(file=file.path(here(),"/Results/hcrs/hcrs_updatingfmsy_5rep.csv"))
+hcr_rep10c <- read_csv(file=file.path(here(),"/Results/hcrs/hcrs_constantfmsy_10rep.csv"))
+hcr_rep10u <- read_csv(file=file.path(here(),"/Results/hcrs/hcrs_updatingfmsy_10rep.csv"))
+
+```
+
+##Data Wrangling
+```{r data_wrangling}
+
+hcr_rep5c <- hcr_rep5c %>%
+  mutate(over_limit = ifelse(f_ratio >= 2, "yes", "no")) %>% 
+  group_by(hcr)
+
+hcr_rep5u <- hcr_rep5u %>% 
+  mutate(over_limit = ifelse(f_ratio >= 2, "yes", "no")) %>% 
+  group_by(hcr)
+  
+hcr_rep10c <- hcr_rep10c %>% 
+  mutate(over_limit = ifelse(f_ratio >= 2, "yes", "no")) %>% 
+  group_by(hcr)
+  
+hcr_rep10u <- hcr_rep10u %>% 
+  mutate(over_limit = ifelse(f_ratio >= 2, "yes", "no")) %>% 
+  group_by(hcr)
+
+counts_rep5c <- hcr_rep5c %>%
+  filter(f_ratio != 0) %>%
+  filter(r_s <= 0) %>% 
+  count(over_limit) %>% 
+  spread(key = "over_limit", value = "n") %>% 
+  mutate(prop_over_limit = yes/(yes + no))
+
+counts_rep5u <- hcr_rep5u %>% 
+  filter(f_ratio != 0) %>%
+  filter(r_s <= 0) %>% 
+  count(over_limit) %>% 
+  spread(key = "over_limit", value = "n") %>% 
+  mutate(prop_over_limit = yes/(yes + no))
+
+counts_rep10c <- hcr_rep10c %>% 
+  filter(f_ratio != 0) %>% 
+  filter(r_s <= 0) %>% 
+  count(over_limit) %>% 
+  spread(key = "over_limit", value = "n") %>% 
+  mutate(prop_over_limit = yes/(yes + no))
+
+counts_rep10u <- hcr_rep10u %>% 
+  filter(f_ratio != 0) %>%
+  filter(r_s <= 0) %>% 
+  count(over_limit) %>% 
+  spread(key = "over_limit", value = "n") %>% 
+  mutate(prop_over_limit = yes/(yes + no))
+```
+
+##Graph
+```{r}
+
+```
+
