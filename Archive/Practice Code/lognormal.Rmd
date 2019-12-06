@@ -1,0 +1,48 @@
+---
+title: "lognormal"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+I think our model has a problem with the lognormal error. Here we will experiment with the draws to be sure that we're calculating it correctly:
+
+
+Experiment with the formula for lognormal
+```{r}
+#Going to try this using the first set of values from the ratio_na dataframe
+m <- 1.0242543 #define the mean using the f_ratio 
+s <- 0.3*m #this experiment used a 0.3 error so the standard deviation is 0.3*mean
+
+#Log transform the mean and stdev
+mu <- log(m^2 / sqrt(s^2 + m^2)) #This seems wrong... its giving me the mean as a negative number 
+sd <- sqrt(log(1 + (s^2 / m^2))) #This seems good this equals 0.2935 which is pretty close to the 0.3072 that was calculated as the sd we want
+
+#This is what they do in the google example:
+draw <- rlnorm(n = 100000000, meanlog = mu, sdlog = sd)
+mean(draw) #This is 1.024 which is what we want but I'm not fully convinced this is right... 
+sd(draw) #This is ~0.3 which is also what we want
+
+plot(draw)
+
+#Draw a random number using rlnorm:
+f_ratio_err <- rlnorm(1, meanlog = mu, sdlog = sd) #These numbers make sense given the distribution but I'm confused about why the mean would be negative...
+
+#Draw random number using exp(rnorm()) to compare:
+log_err <- exp(rnorm(1, mean = mu, sd = sd))
+f_ratio_err2 <- log(log_err) #This is not necessary! - this can sometimes make the number go negative 
+
+#Compare with what we have in our model now:
+model_err <- exp(rnorm(1, mean = m, sd = s)) #This is quite wrong... it's over 3 which seems impossible if the mean is ~1 and the stdev is ~ 0.3 
+```
+
+Okay so going forward we need to add the following code above the draws in the model:
+m <- results$f_ratio[t]
+s <- error * m
+mu <- log(m^2 / sqrt(s^2 + m^2))
+sd <- sqrt(log(1 + (s^2 / m^2)))
+
+And then the actual calculation of the f_ratio_err should be:
+results$f_ratio_err[t] <- rlnorm(1, meanlog = mu, sdlog = sd)

@@ -26,36 +26,31 @@ err_rep10u <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep1
 
 
 ##Decision Calculation
- - Filter four categories of climate change
-    - Most extreme negative 0.01767 (1.7% decrease per year)
-    - Mid-range negative 0.0967 (0.97% decrease per year)
-    - Lower-range negative 0.00167 (0.17% decrease per year)
-    - Mid-range positive 0.01033 (1.03% increase per year)
+ - Filter negative climate change 
  - Filter for assessment years ONLY
- - Group simulations by error percentage and life history
+ - Group simulations by error percentage
  - Count the number of times the model chose a ratio that led the manager to make the wrong decision
 
-#Rep5
-Data wrangling for 5 year intervals where Fmsy updating with climate change:
-```{r wrangle-5u}
-
-#Sequence of r_s to choose categories:
-r_s = seq(-0.01767, 0.01623, 0.002)
-
+#Rep5 - Updating
+Do some basic data wrangling for 5 year intervals where Fmsy updating with climate change:
+  - Look at all negative climate change scenarios
+  - Look at ONLY assessments where a decision was actually made (filter out times when the fishery was closed)
+  - Group by error percentage 
+```{r wrangle-5u-basic}
 #Assessment years:
 assess_5 <- seq(5,100,5)
 
-rep5u <- err_rep5u %>%
-  filter(r_s == -0.01767 | r_s == -0.00967 | r_s == -0.00167 | r_s == 0.01033) %>% 
+#Find the proportion of wrong decisions excluding assessments where the fishery was closed 
+rep5u_no <- err_rep5u %>%
+  filter(r_s <= 0) %>% 
   filter(year == 1 | year %in% assess_5) %>% 
   filter(decision_made == "yes") %>% 
-  group_by(r_s, r_0, error, correct_decision) %>% 
+  group_by(error, correct_decision) %>% 
   tally() %>% 
   rename("count_5u" = n) %>% 
   spread(key = "correct_decision", value = "count_5u") %>%
   mutate(total_decisions_made = sum(no + yes)) %>% 
-  mutate(prop_5u = no/total_decisions_made) %>% 
-  mutate("r0_cat" = ifelse(r_0 <= 0.3, "slow", ifelse(r_0 > 0.3 & r_0 <= 0.5, "intermediate", "fast")))
+  mutate(prop_5u = no/total_decisions_made)
 
 #Now I want to transform the continuous variables (r_s and error) into factors
 rep5u$r_s <- as.factor(rep5u$r_s)
@@ -63,19 +58,48 @@ rep5u$error <- as.factor(rep5u$error)
 
 ```
 
-#Rep10
+
+Now I want to see how many "fails" were included in each error category
+```{r 5u-fails}
+
+#Find the proportion of yes, no, and fail for each error category
+rep5u_fail <- err_rep5u %>% 
+  filter(r_s <= 0) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(error, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5u" = n) %>% 
+  spread(key = "correct_decision", value = "count_5u")
+
+##Hmm this is giving me a category for NA values too. Using summary() it looks like there are 588 NA values for ratio_err_cat but there are also NA values for biomass and catch in at least one simulation... 
+
+#let's investigate this a bit - the NA values for b and c are from experiment 815
+b_na <- err_rep5u %>% 
+  filter(id == 815)
+#Looks like things get weird with the positive climate influence - that the catch is actually larger than biomass because fishing mortality is greater than one...
+
+#Let's see where the ratio category is NA
+ratio_na <- err_rep5u %>% 
+  filter(is.na(ratio_err_cat))
+#Damn - its drawing negative f_ratio_err's under both 0.3 and 0.5 error estimates....
+
+```
+
+
+
+#Rep10 - Updating
 Data wrangling for 10 year intervals where Fmsy is updating with climate change:
-```{r wrangle-10u}
+```{r wrangle-10u-basic}
 
 #Assessment years:
 assess_10 <- seq(10,100,10)
 
-
+#Find the proportion of wrong decisions excluding assessments where the fishery was closed 
 rep10u <- err_rep10u %>%
-  filter(r_s == -0.01767 | r_s == -0.00967 | r_s == -0.00167 | r_s == 0.01033) %>% 
+  filter(r_s <= 0) %>% 
   filter(year == 1 | year %in% assess_10) %>% 
   filter(decision_made == "yes") %>% 
-  group_by(r_s, r_0, error, correct_decision) %>% 
+  group_by(error, correct_decision) %>% 
   tally() %>% 
   rename("count_10u" = n) %>% 
   spread(key = "correct_decision", value = "count_10u")
@@ -84,10 +108,9 @@ rep10u <- err_rep10u %>%
 #note you need to do this before calculating any other values (ie total decisions or proportions)
 rep10u$no[is.na(rep10u$no)] <- 0
 
-rep10u_fail <- rep10u %>% 
+rep10u_no <- rep10u %>% 
   mutate(total_decisions_made = sum(no + yes)) %>% 
-  mutate(prop_10u = no/total_decisions_made) %>% 
-  mutate("r0_cat" = ifelse(r_0 <= 0.3, "slow", ifelse(r_0 > 0.3 & r_0 <= 0.5, "intermediate", "fast")))
+  mutate(prop_10u = no/total_decisions_made)
 
 #Now I want to transform the continuous variables (r_s and error) into factors
 rep10u_fail$r_s <- as.factor(rep10u_fail$r_s)
@@ -95,6 +118,33 @@ rep10u_fail$error <- as.factor(rep10u_fail$error)
 
 
 ```
+
+Now I want to see how many "fails" were included in each error category
+```{r 10u-fails}
+
+#Find the proportion of yes, no, and fail for each error category
+rep10u_fail <- err_rep10u %>% 
+  filter(r_s <= 0) %>% 
+  filter(year == 1 | year %in% assess_10) %>% 
+  group_by(error, correct_decision) %>% 
+  tally() %>% 
+  rename("count_10u" = n) %>% 
+  spread(key = "correct_decision", value = "count_10u")
+
+##Alright this is also giving me an NA category 
+
+#let's investigate this a bit - the NA values for b and c are from experiment 815
+b_na <- err_rep5u %>% 
+  filter(id == 815)
+#Looks like things get weird with the positive climate influence - that the catch is actually larger than biomass because fishing mortality is greater than one...
+
+#Let's see where the ratio category is NA
+ratio_na <- err_rep5u %>% 
+  filter(is.na(ratio_err_cat))
+#Damn - its drawing negative f_ratio_err's under both 0.3 and 0.5 error estimates....
+
+```
+
 
 ##Visualizations
 
