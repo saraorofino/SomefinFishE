@@ -125,7 +125,7 @@ sim_5u <- function(b, r, r_s, error, p, k, years){
     s <- error * m #stdev of normal distribution 
     mu <- log(m^2 / sqrt(s^2 + m^2)) #log transformed mean
     sd <- sqrt(log(1 + (s^2 / m^2))) #log transformed stdev 
-    results$f_ratio_err[t] <- rlnorm(1, meanlog = mu, sdlog = sd) #draw the ratio with error from the lognormal distribution (should never be negative!)
+    results$f_ratio_err[t] <- rlnorm(1, meanlog = mu, sdlog = sd) #draw the ratio with error from the lognormal distribution 
 
 
     #Decisions for f this year based on the ratio with error in the previous year 
