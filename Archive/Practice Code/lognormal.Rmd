@@ -9,6 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 I think our model has a problem with the lognormal error. Here we will experiment with the draws to be sure that we're calculating it correctly:
 
+##Calculate Lognormal Error 
 
 Experiment with the formula for lognormal
 ```{r}
@@ -40,9 +41,356 @@ model_err <- exp(rnorm(1, mean = m, sd = s)) #This is quite wrong... it's over 3
 
 Okay so going forward we need to add the following code above the draws in the model:
 m <- results$f_ratio[t]
-s <- error * m
+s <- error * results$f_ratio[t].
+
 mu <- log(m^2 / sqrt(s^2 + m^2))
 sd <- sqrt(log(1 + (s^2 / m^2)))
 
 And then the actual calculation of the f_ratio_err should be:
 results$f_ratio_err[t] <- rlnorm(1, meanlog = mu, sdlog = sd)
+
+##Calculation Check:
+```{r calc-check}
+#Calculate the lognormal error - this requires some transformation of the original data:
+m_test <- 1.0245 #mean of normal distribution
+s_test <- 0.5 * 1.0245 #stdev of normal distribution 
+
+m_calc <- function(m, s){log(m^2 / sqrt(s^2 + m^2))} #calc log transformed mean
+sd_calc <- function(m,s){sqrt(log(1 + (s^2 / m^2)))} #calc log transformed sd
+
+mu_test <- m_calc(m=m_test, s=s_test) 
+sd_test <- sd_calc(m=m_test, s=s_test) 
+
+
+f_ratio_err <- rlnorm(1, meanlog = mu_test, sdlog = sd_test) #draw the ratio with error from the lognormal distribution (should never be negative!)
+f_ratio_err2 <- exp(rnorm(1, mean = mu_test, sd = sd_test))
+```
+Okay this seems to work fine so now we need to try and put it into the model
+
+
+##Simple Model Check
+
+Use a model that reassesses every year:
+```{r err-simple}
+
+
+err <- function(b, r, r_s, error, p, k, years){
+  
+  results <- data.frame(
+    b = rep(NA, years), c = rep(NA, years), 
+    year = 1:years, r = rep(NA, years), f = rep(NA, years), 
+    m = rep(NA, years), s = rep(NA, years), mu = rep(NA, years), stdev = rep(NA, years),
+    f_msy = rep(NA, years), f_ratio = rep(NA, years), f_ratio_err = rep(NA, years)) #Setup the results dataframe 
+  
+  #Set the initial result for the outputs in year 1
+  results$b[1] = b
+  results$r[1] = r
+  f_int = (results$r[1] / p) * (1 - ((results$b[1] / k) ^ p)) #initial f assuming catch = surplus
+  
+  
+  fmsy <-function(r,p){r * (1 / (1+p))} #Calculate Fmsy 
+  r_calc1 <- results$r[1]
+  results$f_msy[1] <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1 based on historical parameters
+  results$f_ratio[1] = f_int/results$f_msy[1] #calculate the actual f_ratio from initial fishing pressure (this is basically f in time t-1) and fmsy
+  
+  # # Define the mean and st dev transformation functions:
+  # m_calc <- function(m,s){log(m^2 / sqrt(s^2 + m^2))}
+  # stdev_calc <- function(s,m){sqrt(log(1 + (s^2 / m^2)))} 
+  
+  #Assign values to normal dist mean (m) and stdev (s):
+  results$m[1] <- results$f_ratio[1] 
+  results$s[1] <- error * results$m[1]
+  
+  #Transform to new mean (mu) and stdev (stdev)
+  results$mu[1] <-  log((results$m[1]^2) / sqrt((results$s[1]^2) + (results$m[1]^2)))
+  results$stdev[1] <- sqrt(log(1 + ((results$s[1]^2) / (results$m[1]^2)))) 
+  
+  #Draw the ratio:
+  results$f_ratio_err[1] <- rlnorm(1, meanlog = results$mu[1], sdlog = results$stdev[1])
+  
+  #Decide how to change f based on the f ratio estimate with error:
+  if(results$f_ratio_err[1] >= 2){
+       results$f[1] = 0 #Close the fishery
+   } 
+    if(results$f_ratio_err[1] > 1.1 & results$f_ratio_err[1] < 2){
+       results$f[1] = 0.9*f_int #Reduce by 10% - same thing as keeping 90% of previous fishing mortality
+   }  
+    if(results$f_ratio_err[1] > 1 & results$f_ratio_err[1] < 1.1){
+       results$f[1] = f_int  #f stays the same in as last year
+   }
+    if(results$f_ratio_err[1] < 1){
+       results$f[1] = 1.05*f_int #f increases by 5% from last year
+   } 
+  
+  #Calculate catch in year one based on the f with error:
+  results$c[1] = results$f[1] * results$b[1] 
+  
+  ## Loop the model over the specified number of years
+  for (t in 2:years) {
+    
+    results$r[t] = results$r[t-1] + (r_s*results$r[t-1]) 
+    
+    ##HCR decision will change how f is calculated - this step must come before calculating c 
+    # Calculate fmsy in time t from current r 
+    r_calc2 <- results$r[t]
+    results$f_msy[t] <- fmsy(r=r_calc2, p=p)
+    results$f_ratio[t] <- results$f[t-1]/results$f_msy[t-1] #the ratio of f/fmsy at the beginning of the year is based on last years f and fmsy
+
+    #Assign values to normal dist mean (m) and stdev (s):
+    results$m[t] <- results$f_ratio[t]
+    results$s[t] <- error * results$m[t]
+    # mcalc2 <- results$m[t] 
+    # scalc2 <- results$s[t]
+  
+    #Transform to new mean (mu) and stdev (stdev)
+    if(results$f_ratio[t] != 0){
+       results$mu[t] <-  log((results$m[t]^2) / sqrt((results$s[t]^2) + (results$m[t]^2)))
+       results$stdev[t] <- sqrt(log(1 + ((results$s[t]^2) / (results$m[t]^2))))
+       results$f_ratio_err[t] <- rlnorm(1, meanlog = results$mu[t], sdlog = results$stdev[t])
+    }
+    if(results$f_ratio[t] == 0){
+       results$mu[t] = 0
+       results$stdev[t] = 0
+       results$f_ratio_err[t] = 0
+    }
+    
+     
+    #Decisions for f this year based on the ratio with error in the previous year 
+    if(results$f_ratio_err[t] >= 2){
+       results$f[t] = 0
+   }
+    if(results$f_ratio_err[t] > 1.1 & results$f_ratio_err[t] < 2){
+       results$f[t] = 0.9*results$f[t-1] #Reduce by 10% - same thing as keeping 90% of previous fishing mortality
+   }
+    if(results$f_ratio_err[t] > 1 & results$f_ratio_err[t] < 1.1){
+       results$f[t] = results$f[t-1]  #f stays the same in as last year
+   }
+    if(results$f_ratio_err[t] < 1){
+       results$f[t] = 1.05*results$f[t-1] #f increases by 5% from last year
+   }
+    
+    #results$f[t]= 0.9 * results$f[t-1]
+    #Calculate remaining results - pay attention to the order!
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    results$c[t] = results$f[t] * results$b[t]
+    
+}
+  return(results)
+}
+
+```
+
+##Model Check
+
+Simple results check:
+```{r simple-check}
+
+err_test <- err(b=1500, r=0.2, r_s=-0.01767, error=0.50, p=0.2, k=10000, years=10)
+```
+This doesn't run on the first try but if I run it a bunch of times in a row sometimes it works... when I look at the results it looks like the stdev column is never updating. 
+For example: in the first year I get mu = 0.527365982	and stdev = 0.4723807 (f_ratio = 1.894467)
+In year 5 I get mu = 0.264768370 and stdev =	0.4723807 (f_ratio = 1.456943)
+In year 10 I get mu = -0.018743638 and stdev = 0.4723807 (f_ratio = 1.097273)
+
+I'm going to test what the stdev should be given the f_ratio is (error = 0.5 for both):
+```{r stdev-test}
+##YEAR 1
+#Use the same way of calculating s as the model:
+s1 <- 0.5 * 1.894467
+
+mu1 <- m_calc(m=1.894467, s=s1) #okay mu is correct 0.5273
+sd1 <- stdev_calc(m=1.894467, s=s1) #stdev is also correct 0.4723
+
+##YEAR 5
+s2 <- 0.5 * 1.456943
+
+mu2 <- m_calc(m=1.456943, s=s2)
+sd2 <- stdev_calc(s=s2, m=1.456943)
+
+##YEAR 10
+s3 <- 0.5 * 1.097273
+
+mu3 <- m_calc(m=1.097273, s=s3) #mu is correct -0.01874
+sd3 <- stdev_calc(s=s3, m=1.097273) #stdev is also correct... how is that possible? 
+
+
+
+```
+The calculations have standard deviations that come out exactly the same to 15 digits... how is that possible when the input values are different????
+
+
+##Input List:
+
+Create a short list with two types of error. Use just 10 years so its easy to look through all the results
+```{r inputs}
+#Design experiments
+list_err <- list(
+  b = 1500,
+  r = 0.2,
+  r_s = -0.01767, 
+  error = c(0.30,0.50),
+  p = 0.2,
+  k = 10000,
+  years = 10
+)
+
+input_err <- list_err %>%
+  cross()
+
+```
+
+##Run
+
+Run the model:
+```{r run}
+
+results = list()
+
+#Run the model over the input lists:
+
+for(i in 1:2){
+  results[[i]] <- err(b=input_err[[i]]$b, r=input_err[[i]]$r,
+                             r_s=input_err[[i]]$r_s, p=input_err[[i]]$p,
+                             k=input_err[[i]]$k,years=input_err[[i]]$years, 
+                             error = input_err[[i]]$error)
+}
+
+```
+
+Running the model over the list doesn't work. 
+
+Does it work to run the model over each list individually?
+```{r run2}
+
+test_0.3 <- err(b=1500, r=0.2, r_s=-0.01767, error=0.30, p=0.2, k=10000, years=10)
+
+test_0.5 <- err(b=1500, r=0.2, r_s=-0.01767, error=0.50, p=0.2, k=10000, years=10)
+
+```
+It ran over the first list but not the second one...
+Again in the results for the first list the standard deviation is the same in every year... but I don't get how that's possible. 
+I tried doing a few of the calculations in wolfram alpha and you do get that they're exactly the same. So either the stdev equation is wrong or that's the way its supposed to be.
+
+Still doesn't explain why it doesn't run on the first try... and I get the results$f_ratio_err[t] >= 2 missing value where TRUE/FALSE needed error...
+
+I'm just gonna try a lot of things and keep track of them here:
+
+  1. Keep track of all the calc variables in the results to see where things go wrong
+    - This doesn't solve the error message problem 
+  
+  2. Comment out the functions and just calculate the mu and stdev with the formulas directly
+    - This doesn't solve the error message problem either 
+    
+  3. Comment out the HCR part since that's what causing the problems and set f to always decrease by 10%
+    - This runs but it will produce NAN values if f_ratio is over 2 in year 1 because then the math for calculating the mean and stdev in the next years gives nonreal numbers.
+  
+  4. Add an if statement for the mu and stdev calcs that it only calculates them if the f_ratio is not zero
+    - This seems to run fine
+    
+  5. Try adding the HCR part back in with the if statement for the calculations
+    - Okay this seems to work now....
+    
+  6. Try taking the mu and stdev calculations out of the results dataframe (Cause ideally we don't actually want to track these it'll just make the results messier)
+    - Okay that also worked...now I'll try adding this code into the error_updating_rep5 model....
+
+```{r}
+err <- function(b, r, r_s, error, p, k, years){
+  
+  results <- data.frame(
+    b = rep(NA, years), c = rep(NA, years), 
+    year = 1:years, r = rep(NA, years), f = rep(NA, years), 
+    f_msy = rep(NA, years), f_ratio = rep(NA, years), f_ratio_err = rep(NA, years)) #Setup the results dataframe 
+  
+  #Set the initial result for the outputs in year 1
+  results$b[1] = b
+  results$r[1] = r
+  f_int = (results$r[1] / p) * (1 - ((results$b[1] / k) ^ p)) #initial f assuming catch = surplus
+  
+  
+  fmsy <-function(r,p){r * (1 / (1+p))} #Calculate Fmsy 
+  r_calc1 <- results$r[1]
+  results$f_msy[1] <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1 based on historical parameters
+  results$f_ratio[1] = f_int/results$f_msy[1] #calculate the actual f_ratio from initial fishing pressure (this is basically f in time t-1) and fmsy
+  
+  # # Define the mean and st dev transformation functions:
+  # m_calc <- function(m,s){log(m^2 / sqrt(s^2 + m^2))}
+  # stdev_calc <- function(s,m){sqrt(log(1 + (s^2 / m^2)))} 
+  
+  #Assign values to normal dist mean (m) and stdev (s):
+  m1 <- results$f_ratio[1] 
+  s1 <- error * results$f_ratio[1]
+  
+  #Transform to new mean (mu) and stdev (stdev)
+  mu1 <- log((m1^2) / sqrt((s1^2) + (m1^2)))
+  sd1 <- sqrt(log(1 + ((s1^2) / (m1^2)))) 
+  
+  #Draw the ratio:
+  results$f_ratio_err[1] <- rlnorm(1, meanlog = mu1, sdlog = sd1)
+  
+  #Decide how to change f based on the f ratio estimate with error:
+  if(results$f_ratio_err[1] >= 2){
+       results$f[1] = 0 #Close the fishery
+   } 
+    if(results$f_ratio_err[1] > 1.1 & results$f_ratio_err[1] < 2){
+       results$f[1] = 0.9*f_int #Reduce by 10% - same thing as keeping 90% of previous fishing mortality
+   }  
+    if(results$f_ratio_err[1] > 1 & results$f_ratio_err[1] < 1.1){
+       results$f[1] = f_int  #f stays the same in as last year
+   }
+    if(results$f_ratio_err[1] < 1){
+       results$f[1] = 1.05*f_int #f increases by 5% from last year
+   } 
+  
+  #Calculate catch in year one based on the f with error:
+  results$c[1] = results$f[1] * results$b[1] 
+  
+  ## Loop the model over the specified number of years
+  for (t in 2:years) {
+    
+    results$r[t] = results$r[t-1] + (r_s*results$r[t-1]) 
+    
+    ##HCR decision will change how f is calculated - this step must come before calculating c 
+    # Calculate fmsy in time t from current r 
+    r_calc2 <- results$r[t]
+    results$f_msy[t] <- fmsy(r=r_calc2, p=p)
+    results$f_ratio[t] <- results$f[t-1]/results$f_msy[t-1] #the ratio of f/fmsy at the beginning of the year is based on last years f and fmsy
+  
+    #Transform to new mean (mu) and stdev (stdev)
+    if(results$f_ratio[t] != 0){
+       #Assign values to normal dist mean (m) and stdev (s):
+       m2 <- results$f_ratio[t]
+       s2 <- error * results$f_ratio[t]
+       #Calculate the f_ratio_err
+       mu2 <-  log((m2^2) / sqrt((s2^2) + (m2^2)))
+       sd2 <- sqrt(log(1 + ((s2^2) / (m2^2))))
+       results$f_ratio_err[t] <- rlnorm(1, meanlog = mu2, sdlog = sd2)
+    }
+    if(results$f_ratio[t] == 0){
+       results$f_ratio_err[t] = results$f_ratio_err[t-1]
+    }
+    
+     
+    #Decisions for f this year based on the ratio with error in the previous year 
+    if(results$f_ratio_err[t] >= 2){
+       results$f[t] = 0
+   }
+    if(results$f_ratio_err[t] > 1.1 & results$f_ratio_err[t] < 2){
+       results$f[t] = 0.9*results$f[t-1] #Reduce by 10% - same thing as keeping 90% of previous fishing mortality
+   }
+    if(results$f_ratio_err[t] > 1 & results$f_ratio_err[t] < 1.1){
+       results$f[t] = results$f[t-1]  #f stays the same in as last year
+   }
+    if(results$f_ratio_err[t] < 1){
+       results$f[t] = 1.05*results$f[t-1] #f increases by 5% from last year
+   }
+    
+    #results$f[t]= 0.9 * results$f[t-1]
+    #Calculate remaining results - pay attention to the order!
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    results$c[t] = results$f[t] * results$b[t]
+    
+}
+  return(results)
+}
+```
+

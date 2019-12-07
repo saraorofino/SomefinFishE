@@ -52,9 +52,8 @@ rep5u_no <- err_rep5u %>%
   mutate(total_decisions_made = sum(no + yes)) %>% 
   mutate(prop_5u = no/total_decisions_made)
 
-#Now I want to transform the continuous variables (r_s and error) into factors
-rep5u$r_s <- as.factor(rep5u$r_s)
-rep5u$error <- as.factor(rep5u$error)
+#Now I want to transform the error into factors
+rep5u_no$error <- as.factor(rep5u_no$error)
 
 ```
 
@@ -71,17 +70,6 @@ rep5u_fail <- err_rep5u %>%
   rename("count_5u" = n) %>% 
   spread(key = "correct_decision", value = "count_5u")
 
-##Hmm this is giving me a category for NA values too. Using summary() it looks like there are 588 NA values for ratio_err_cat but there are also NA values for biomass and catch in at least one simulation... 
-
-#let's investigate this a bit - the NA values for b and c are from experiment 815
-b_na <- err_rep5u %>% 
-  filter(id == 815)
-#Looks like things get weird with the positive climate influence - that the catch is actually larger than biomass because fishing mortality is greater than one...
-
-#Let's see where the ratio category is NA
-ratio_na <- err_rep5u %>% 
-  filter(is.na(ratio_err_cat))
-#Damn - its drawing negative f_ratio_err's under both 0.3 and 0.5 error estimates....
 
 ```
 
