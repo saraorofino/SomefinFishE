@@ -9,7 +9,7 @@ output: html_document
 
 ##Setup
 
-```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+```{r setup, warning=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
 #Packages
@@ -31,7 +31,7 @@ err_rep10u <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep1
  - Group simulations by error percentage
  - Count the number of times the model chose a ratio that led the manager to make the wrong decision
 
-#Rep5 - Updating
+Rep5 - Updating
 Do some basic data wrangling for 5 year intervals where Fmsy updating with climate change:
   - Look at all negative climate change scenarios
   - Look at ONLY assessments where a decision was actually made (filter out times when the fishery was closed)
@@ -50,7 +50,7 @@ rep5u_no <- err_rep5u %>%
   rename("count_5u" = n) %>% 
   spread(key = "correct_decision", value = "count_5u") %>%
   mutate(total_decisions_made = sum(no + yes)) %>% 
-  mutate(prop_5u = no/total_decisions_made)
+  mutate(prop_no = no/total_decisions_made)
 
 #Now I want to transform the error into factors
 rep5u_no$error <- as.factor(rep5u_no$error)
@@ -68,14 +68,17 @@ rep5u_fail <- err_rep5u %>%
   group_by(error, correct_decision) %>% 
   tally() %>% 
   rename("count_5u" = n) %>% 
-  spread(key = "correct_decision", value = "count_5u")
+  spread(key = "correct_decision", value = "count_5u") %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_fail = fail / total_decisions)
 
-
+#Now I want to transform the error into factors
+rep5u_fail$error <- as.factor(rep5u_fail$error)
 ```
 
 
 
-#Rep10 - Updating
+Rep10 - Updating
 Data wrangling for 10 year intervals where Fmsy is updating with climate change:
 ```{r wrangle-10u-basic}
 
@@ -83,26 +86,19 @@ Data wrangling for 10 year intervals where Fmsy is updating with climate change:
 assess_10 <- seq(10,100,10)
 
 #Find the proportion of wrong decisions excluding assessments where the fishery was closed 
-rep10u <- err_rep10u %>%
+rep10u_no <- err_rep10u %>%
   filter(r_s <= 0) %>% 
   filter(year == 1 | year %in% assess_10) %>% 
   filter(decision_made == "yes") %>% 
   group_by(error, correct_decision) %>% 
   tally() %>% 
   rename("count_10u" = n) %>% 
-  spread(key = "correct_decision", value = "count_10u")
-
-#There are a few scenarios where no wrong decisions are made - change these values from NA to zero
-#note you need to do this before calculating any other values (ie total decisions or proportions)
-rep10u$no[is.na(rep10u$no)] <- 0
-
-rep10u_no <- rep10u %>% 
+  spread(key = "correct_decision", value = "count_10u") %>% 
   mutate(total_decisions_made = sum(no + yes)) %>% 
-  mutate(prop_10u = no/total_decisions_made)
+  mutate(prop_no = no/total_decisions_made)
 
-#Now I want to transform the continuous variables (r_s and error) into factors
-rep10u_fail$r_s <- as.factor(rep10u_fail$r_s)
-rep10u_fail$error <- as.factor(rep10u_fail$error)
+#Now I want to transform the error into factors
+rep10u_no$error <- as.factor(rep10u_no$error)
 
 
 ```
@@ -117,20 +113,71 @@ rep10u_fail <- err_rep10u %>%
   group_by(error, correct_decision) %>% 
   tally() %>% 
   rename("count_10u" = n) %>% 
-  spread(key = "correct_decision", value = "count_10u")
+  spread(key = "correct_decision", value = "count_10u") %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_fail = fail / total_decisions)
 
-##Alright this is also giving me an NA category 
+#Now I want to transform the error into factors
+rep10u_fail$error <- as.factor(rep10u_fail$error)
 
-#let's investigate this a bit - the NA values for b and c are from experiment 815
-b_na <- err_rep5u %>% 
-  filter(id == 815)
-#Looks like things get weird with the positive climate influence - that the catch is actually larger than biomass because fishing mortality is greater than one...
+```
 
-#Let's see where the ratio category is NA
-ratio_na <- err_rep5u %>% 
-  filter(is.na(ratio_err_cat))
-#Damn - its drawing negative f_ratio_err's under both 0.3 and 0.5 error estimates....
+##Table
 
+Proportion of yes/no/fail for 5 year updating Fmsy at the three different errors:
+```{r rep5-table}
+library(kableExtra)
+
+rep5 <- err_rep5u %>% 
+  filter(r_s <= 0) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(error, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5u" = n) %>% 
+  spread(key = "correct_decision", value = "count_5u") %>% 
+  mutate(total_assessments = sum(yes + no + fail)) %>% 
+  mutate(decisions_made = sum(yes + no)) %>% 
+  mutate(prop_fail = round(fail / total_assessments, digits = 3)) %>% 
+  mutate(prop_no = round(no / decisions_made, digits = 3)) %>% 
+  mutate(prop_yes = round(yes / decisions_made, digits = 3)) %>% 
+  select(error, total_assessments, fail, prop_fail, decisions_made, yes, prop_yes, no, prop_no)
+
+rep5_table <- kable(rep5, col.names = c("Error", "Number of Assessments", "Fail", "Proportion of Failures", "Number of Decisions Made",
+                                        "Number of Yes", "Proportion of Yes", "Number of No", "Proportion of No")) %>% 
+  kable_styling(bootstrap_options = c("striped", "bordered", "condensed"), full_width = F) %>% 
+  row_spec(0, align = "c", font_size = 10) %>% 
+  row_spec(1, font_size = 10) %>% 
+  row_spec(2, font_size = 10) %>% 
+  row_spec(3, font_size = 10)
+
+rep5_table
+```
+
+Proportion of yes/no/fail for 10 year updating Fmsy at the three different errors:
+```{r rep10-table}
+rep10 <- err_rep10u %>% 
+  filter(r_s <= 0) %>% 
+  filter(year == 1 | year %in% assess_10) %>% 
+  group_by(error, correct_decision) %>% 
+  tally() %>% 
+  rename("count_10u" = n) %>% 
+  spread(key = "correct_decision", value = "count_10u") %>% 
+  mutate(total_assessments = sum(yes + no + fail)) %>% 
+  mutate(decisions_made = sum(yes + no)) %>% 
+  mutate(prop_fail = round(fail / total_assessments, digits = 3)) %>% 
+  mutate(prop_no = round(no / decisions_made, digits = 3)) %>% 
+  mutate(prop_yes = round(yes / decisions_made, digits = 3)) %>% 
+  select(error, total_assessments, fail, prop_fail, decisions_made, yes, prop_yes, no, prop_no)
+
+rep10_table <- kable(rep10, col.names = c("Error", "Number of Assessments", "Fail", "Proportion of Failures", "Number of Decisions Made",
+                                        "Number of Yes", "Proportion of Yes", "Number of No", "Proportion of No")) %>% 
+  kable_styling(bootstrap_options = c("striped", "bordered", "condensed"), full_width = F) %>% 
+  row_spec(0, align = "c", font_size = 10) %>% 
+  row_spec(1, font_size = 10) %>% 
+  row_spec(2, font_size = 10) %>% 
+  row_spec(3, font_size = 10)
+
+rep10_table
 ```
 
 
@@ -138,28 +185,44 @@ ratio_na <- err_rep5u %>%
 
 Experiment with a few ways of visualizing this data
 
-#Rep5
+Rep5
 
 First try proportion of failures on the y-axis with error categories on the x-axis for updating Fmsy
 ```{r rep5-viz1}
 
-fail5 <- ggplot(rep5u, aes(x = error, y= prop_5u)) +
-  geom_jitter(aes(size = r_s, color = r0_cat), alpha = 0.8, width = 0.25)
+fail5 <- ggplot(rep5u_no, aes(x = error, y= prop_no)) +
+  geom_point(aes(color = "No")) + 
+  geom_point(aes(x = error, y = prop_fail, color = "Fail"), data = rep5u_fail) + 
+  scale_color_manual(breaks = c("No", "Fail"), values = c("midnightblue", "firebrick4")) +
+  labs(x = "Error", y = "Proportion") +
+  guides(color=guide_legend(title=NULL)) +
+  theme_bw() 
 
 fail5
 
 
 ```
 
-#Rep10
+Rep10
 
 First try proportion of failures on the y-axis with error categories on the x-axis for updating Fmsy
 ```{r rep10-viz1}
 
-fail10 <- ggplot(rep10u_fail, aes(x = error, y= prop_10u)) +
-  geom_jitter(aes(size = r_s, color = r0_cat), alpha = 0.8, width = 0.25)
+fail10 <- ggplot(rep10u_no, aes(x = error, y= prop_no)) +
+  geom_point(aes(color = "No")) + 
+  geom_point(aes(x = error, y = prop_fail, color = "Fail"), data = rep10u_fail) + 
+  scale_color_manual(breaks = c("No", "Fail"), values = c("midnightblue", "firebrick4")) +
+  labs(x = "Error", y = "Proportion") +
+  guides(color=guide_legend(title=NULL)) +
+  theme_bw() 
 
 fail10
 
-
 ```
+
+
+
+
+
+
+

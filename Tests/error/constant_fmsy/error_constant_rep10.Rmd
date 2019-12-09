@@ -83,14 +83,14 @@ sim_10c <- function(b, r, r_s, error, p, k, years){
   results$f_msy[1] <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1 based on historical parameters
   results$f_ratio[1] = f_int/results$f_msy[1] #calculate the actual f_ratio from initial fishing pressure (this is basically f in time t-1) and fmsy
 
-  #Calculate the lognormal error - this requires some transformation of the original data:
-  m <- results$f_ratio[1] #mean of normal distribution
-  s <- error * m #stdev of normal distribution 
-  mu <- log(m^2 / sqrt(s^2 + m^2)) #log transformed mean
-  sd <- sqrt(log(1 + (s^2 / m^2))) #log transformed stdev 
-  results$f_ratio_err[1] <- rlnorm(1, meanlog = mu, sdlog = sd) #draw the ratio with error from the lognormal distribution (should never be negative!)
-
+  #Log transform the mean (m) and stdev (s):
+  mu_1 <- log(results$f_ratio[1]) 
+  cv <- error
+  sd <- sqrt(log(cv^2+1))
   
+  #Draw the f_ratio_err:
+  results$f_ratio_err[1] <- rlnorm(1, meanlog = mu_1, sdlog = sd)
+
   #Decide how to change f based on the f ratio estimate with error:
   if(results$f_ratio_err[1] >= 2){
        results$f[1] = 0 #Close the fishery
@@ -121,13 +121,16 @@ sim_10c <- function(b, r, r_s, error, p, k, years){
     results$f_msy[t] <- fmsy(r=r_calc2, p=p)
     results$f_ratio[t] <- results$f[t-1]/results$f_msy[t-1] #the ratio of f/fmsy at the beginning of the year is based on last years f and fmsy
 
-    #Calculate the lognormal error - this requires some transformation of the original data:
-    m <- results$f_ratio[t] #mean of normal distribution
-    s <- error * m #stdev of normal distribution 
-    mu <- log(m^2 / sqrt(s^2 + m^2)) #log transformed mean
-    sd <- sqrt(log(1 + (s^2 / m^2))) #log transformed stdev 
-    results$f_ratio_err[t] <- rlnorm(1, meanlog = mu, sdlog = sd) #draw the ratio with error from the lognormal distribution 
-
+    #Transform to new mean (mu) and stdev (stdev)
+    if(results$f_ratio[t] != 0){
+       #Assign values to normal dist mean (m) and stdev (s):
+       mu_2 <- results$f_ratio[t]
+       #Draw the f_ratio_err
+       results$f_ratio_err[t] <- rlnorm(1, meanlog = mu_2, sdlog = sd)
+    }
+    if(results$f_ratio[t] == 0){
+       results$f_ratio_err[t] = 0
+    }
     
     #Decisions for f this year based on the ratio with error in the previous year 
     if(results$f_ratio_err[t] >= 2){

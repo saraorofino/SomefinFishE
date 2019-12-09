@@ -5,6 +5,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
 ```
 
 I think our model has a problem with the lognormal error. Here we will experiment with the draws to be sure that we're calculating it correctly:
@@ -293,6 +294,19 @@ I'm just gonna try a lot of things and keep track of them here:
   6. Try taking the mu and stdev calculations out of the results dataframe (Cause ideally we don't actually want to track these it'll just make the results messier)
     - Okay that also worked...now I'll try adding this code into the error_updating_rep5 model....
 
+From Chris Free's email:
+```{r}
+#Use an example f_ratio:
+mu <- 1.894467
+cv <- 0.3
+mu_log <- log(mu)
+sd_log <- sqrt(log(cv^2+1))
+Y <- rlnorm(n=1000, meanlog = mu_log, sdlog=sd_log)
+hist(Y, breaks=20, xlim=c(-0.5, 5))
+```
+
+
+Okay now put it into the model:
 ```{r}
 err <- function(b, r, r_s, error, p, k, years){
   
@@ -312,20 +326,13 @@ err <- function(b, r, r_s, error, p, k, years){
   results$f_msy[1] <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1 based on historical parameters
   results$f_ratio[1] = f_int/results$f_msy[1] #calculate the actual f_ratio from initial fishing pressure (this is basically f in time t-1) and fmsy
   
-  # # Define the mean and st dev transformation functions:
-  # m_calc <- function(m,s){log(m^2 / sqrt(s^2 + m^2))}
-  # stdev_calc <- function(s,m){sqrt(log(1 + (s^2 / m^2)))} 
+  #Log transform the mean (m) and stdev (s):
+  mu_1 <- log(results$f_ratio[1]) 
+  cv <- error
+  sd <- sqrt(log(cv^2+1))
   
-  #Assign values to normal dist mean (m) and stdev (s):
-  m1 <- results$f_ratio[1] 
-  s1 <- error * results$f_ratio[1]
-  
-  #Transform to new mean (mu) and stdev (stdev)
-  mu1 <- log((m1^2) / sqrt((s1^2) + (m1^2)))
-  sd1 <- sqrt(log(1 + ((s1^2) / (m1^2)))) 
-  
-  #Draw the ratio:
-  results$f_ratio_err[1] <- rlnorm(1, meanlog = mu1, sdlog = sd1)
+  #Draw the f_ratio_err:
+  results$f_ratio_err[1] <- rlnorm(1, meanlog = mu_1, sdlog = sd)
   
   #Decide how to change f based on the f ratio estimate with error:
   if(results$f_ratio_err[1] >= 2){
@@ -358,15 +365,12 @@ err <- function(b, r, r_s, error, p, k, years){
     #Transform to new mean (mu) and stdev (stdev)
     if(results$f_ratio[t] != 0){
        #Assign values to normal dist mean (m) and stdev (s):
-       m2 <- results$f_ratio[t]
-       s2 <- error * results$f_ratio[t]
-       #Calculate the f_ratio_err
-       mu2 <-  log((m2^2) / sqrt((s2^2) + (m2^2)))
-       sd2 <- sqrt(log(1 + ((s2^2) / (m2^2))))
-       results$f_ratio_err[t] <- rlnorm(1, meanlog = mu2, sdlog = sd2)
+       mu_2 <- results$f_ratio[t]
+       #Draw the f_ratio_err
+       results$f_ratio_err[t] <- rlnorm(1, meanlog = mu_2, sdlog = sd)
     }
     if(results$f_ratio[t] == 0){
-       results$f_ratio_err[t] = results$f_ratio_err[t-1]
+       results$f_ratio_err[t] = 0
     }
     
      
