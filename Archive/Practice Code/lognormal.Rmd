@@ -23,11 +23,10 @@ mu <- log(m^2 / sqrt(s^2 + m^2)) #This seems wrong... its giving me the mean as 
 sd <- sqrt(log(1 + (s^2 / m^2))) #This seems good this equals 0.2935 which is pretty close to the 0.3072 that was calculated as the sd we want
 
 #This is what they do in the google example:
-draw <- rlnorm(n = 100000000, meanlog = mu, sdlog = sd)
+draw <- rlnorm(n = 1000000, meanlog = mu, sdlog = sd)
 mean(draw) #This is 1.024 which is what we want but I'm not fully convinced this is right... 
 sd(draw) #This is ~0.3 which is also what we want
 
-plot(draw)
 
 #Draw a random number using rlnorm:
 f_ratio_err <- rlnorm(1, meanlog = mu, sdlog = sd) #These numbers make sense given the distribution but I'm confused about why the mean would be negative...
@@ -301,8 +300,22 @@ mu <- 1.894467
 cv <- 0.3
 mu_log <- log(mu)
 sd_log <- sqrt(log(cv^2+1))
-Y <- rlnorm(n=1000, meanlog = mu_log, sdlog=sd_log)
-hist(Y, breaks=20, xlim=c(-0.5, 5))
+Y <- rlnorm(n=10000, meanlog = mu_log, sdlog=sd_log)
+hist(Y, breaks=40, xlim=c(-0.5, 5))
+hist(Z, breaks = 40, xlim = c(-0.5, 5))
+
+#tested our original log mean transformation vs. chris'
+#they are a little bit different but makes sense to us now to just roll with what Chris said
+
+Z <- rlnorm(n=10000, meanlog = a, sdlog = sd_log)
+hist(Z, breaks = 40, xlim = c(-0.5, 5))
+
+b <- 1.89*.3
+b
+a <- log(1.89^2 / sqrt(b^2 + 1.89^2))
+a # .593488
+c <- log(1.89)
+c # .636576
 ```
 
 

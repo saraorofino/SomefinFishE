@@ -83,10 +83,10 @@ sim_5c <- function(b, r, r_s, error, p, k, years){
   #Log transform the mean (m) and stdev (s):
   mu_1 <- log(results$f_ratio[1]) 
   cv <- error
-  sd <- sqrt(log(cv^2+1))
+  sd_1 <- sqrt(log(cv^2+1))
   
   #Draw the f_ratio_err:
-  results$f_ratio_err[1] <- rlnorm(1, meanlog = mu_1, sdlog = sd)
+  results$f_ratio_err[1] <- rlnorm(1, meanlog = mu_1, sdlog = sd_1)
   
   #Decide how to change f based on the f ratio estimate with error:
   if(results$f_ratio_err[1] >= 2){
@@ -118,12 +118,12 @@ sim_5c <- function(b, r, r_s, error, p, k, years){
     results$f_msy[t] <- fmsy(r=r_calc2, p=p)
     results$f_ratio[t] <- results$f[t-1]/results$f_msy[t-1] #the ratio of f/fmsy at the beginning of the year is based on last years f and fmsy
 
-    #Transform to new mean (mu) and stdev (stdev)
+    #Transform to new mean (mu)
     if(results$f_ratio[t] != 0){
-       #Assign values to normal dist mean (m) and stdev (s):
-       mu_2 <- results$f_ratio[t]
+       #Assign values to normal dist mean (m):
+       mu_2 <- log(results$f_ratio[t])
        #Draw the f_ratio_err
-       results$f_ratio_err[t] <- rlnorm(1, meanlog = mu_2, sdlog = sd)
+       results$f_ratio_err[t] <- rlnorm(1, meanlog = mu_2, sdlog = sd_1)
     }
     if(results$f_ratio[t] == 0){
        results$f_ratio_err[t] = 0
@@ -171,7 +171,7 @@ sim_5c <- function(b, r, r_s, error, p, k, years){
 Simple results check:
 ```{r simple-check}
 
-check_result_5c <- sim_5c(b=6000, r=0.2, r_s=-0.01767, error=0.10, p=0.2, k=10000, years=100)
+check_result_5c <- sim_5c(b=1500, r=0.2, r_s=-0.01767, error=0.10, p=0.2, k=10000, years=100)
 ```
 
 ##Model Inputs List

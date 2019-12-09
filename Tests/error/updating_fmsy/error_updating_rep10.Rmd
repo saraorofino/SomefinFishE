@@ -88,10 +88,10 @@ sim_10u <- function(b, r, r_s, error, p, k, years){
   #Log transform the mean (m) and stdev (s):
   mu_1 <- log(results$f_ratio[1]) 
   cv <- error
-  sd <- sqrt(log(cv^2+1))
+  sd_1 <- sqrt(log(cv^2+1))
   
   #Draw the f_ratio_err:
-  results$f_ratio_err[1] <- rlnorm(1, meanlog = mu_1, sdlog = sd)
+  results$f_ratio_err[1] <- rlnorm(1, meanlog = mu_1, sdlog = sd_1)
 
   
   #Decide how to change f based on the f ratio estimate with error:
@@ -126,10 +126,10 @@ sim_10u <- function(b, r, r_s, error, p, k, years){
 
     #Transform to new mean (mu) and stdev (stdev)
     if(results$f_ratio[t] != 0){
-       #Assign values to normal dist mean (m) and stdev (s):
-       mu_2 <- results$f_ratio[t]
+       #Assign values to normal dist mean (m):
+       mu_2 <- log(results$f_ratio[t])
        #Draw the f_ratio_err
-       results$f_ratio_err[t] <- rlnorm(1, meanlog = mu_2, sdlog = sd)
+       results$f_ratio_err[t] <- rlnorm(1, meanlog = mu_2, sdlog = sd_1)
     }
     if(results$f_ratio[t] == 0){
        results$f_ratio_err[t] = 0
@@ -178,7 +178,7 @@ sim_10u <- function(b, r, r_s, error, p, k, years){
 Simple results check:
 ```{r simple-check}
 
-check_result_10u <- sim_10u(b=6000, r=0.2, r_s=-0.01767, error=0.10, p=0.2, k=10000, years=100)
+check_result_10u <- sim_10u(b=1500, r=0.2, r_s=-0.01767, error=0.10, p=0.2, k=10000, years=100)
 ```
 
 ##Model Inputs List
@@ -266,9 +266,9 @@ results_rep10u_edit <- results_rep10u %>%
 colnames(results_rep10u_edit) <- col_names
 
 #Write as CSV:
-# library(here)
-# write.csv(results_rep10u_edit,
-#           file=file.path(here(),"/Results/error/error_updating_rep10.csv"),
-#           row.names = FALSE)
+ # library(here)
+ # write.csv(results_rep10u_edit,
+ #           file=file.path(here(),"/Results/error/error_updating_rep10.csv"),
+ #           row.names = FALSE)
 
 ```

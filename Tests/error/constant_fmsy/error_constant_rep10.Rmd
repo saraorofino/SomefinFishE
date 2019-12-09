@@ -86,10 +86,10 @@ sim_10c <- function(b, r, r_s, error, p, k, years){
   #Log transform the mean (m) and stdev (s):
   mu_1 <- log(results$f_ratio[1]) 
   cv <- error
-  sd <- sqrt(log(cv^2+1))
+  sd_1 <- sqrt(log(cv^2+1))
   
   #Draw the f_ratio_err:
-  results$f_ratio_err[1] <- rlnorm(1, meanlog = mu_1, sdlog = sd)
+  results$f_ratio_err[1] <- rlnorm(1, meanlog = mu_1, sdlog = sd_1)
 
   #Decide how to change f based on the f ratio estimate with error:
   if(results$f_ratio_err[1] >= 2){
@@ -123,10 +123,10 @@ sim_10c <- function(b, r, r_s, error, p, k, years){
 
     #Transform to new mean (mu) and stdev (stdev)
     if(results$f_ratio[t] != 0){
-       #Assign values to normal dist mean (m) and stdev (s):
-       mu_2 <- results$f_ratio[t]
+       #Assign values to normal dist mean (m):
+       mu_2 <- log(results$f_ratio[t])
        #Draw the f_ratio_err
-       results$f_ratio_err[t] <- rlnorm(1, meanlog = mu_2, sdlog = sd)
+       results$f_ratio_err[t] <- rlnorm(1, meanlog = mu_2, sdlog = sd_1)
     }
     if(results$f_ratio[t] == 0){
        results$f_ratio_err[t] = 0
@@ -144,9 +144,7 @@ sim_10c <- function(b, r, r_s, error, p, k, years){
    }
     if(results$f_ratio_err[t] < 1){
        results$f[t] = 1.05*results$f[t-1] #f increases by 5% from last year
-   } 
-    if(results$f_ratio_err[t] == is.na(results$f_ratio_err[t])){
-       results$f[t] = 0
+       
     }
     
     #Calculate remaining results - pay attention to the order!
@@ -265,9 +263,9 @@ results_rep10c_edit <- results_rep10c %>%
 colnames(results_rep10c_edit) <- col_names
 
 #Write as CSV:
-# library(here)
-# write.csv(results_rep10c_edit,
-#           file=file.path(here(),"/Results/error/error_constant_rep10.csv"),
-#           row.names = FALSE)
+ # library(here)
+ # write.csv(results_rep10c_edit,
+ #           file=file.path(here(),"/Results/error/error_constant_rep10.csv"),
+ #           row.names = FALSE)
 
 ```
