@@ -182,7 +182,7 @@ list_hcr <- list(
   b = c(1500, 4000, 6000),
   r = seq(0.1, .8, .1),
   r_s = seq(-0.01767, 0.01623, 0.002),
-  error = 0.1,
+  error = 0.3,
   p = 0.2,
   k = 10000,
   years = 100,
@@ -241,7 +241,7 @@ results_hcr <- bind_rows(results_id)
 #Update the column names:
 colnames(results_hcr) <- col_names
 
-# #Write as CSV:
+#Write as CSV:
 # library(here)
 #  write.csv(results_hcr, file=file.path(here(),"/Results/hcrs/hcrs_updatingfmsy_10rep.csv"),
 #            row.names = FALSE)

@@ -25,48 +25,56 @@ hcr_rep10u <- read_csv(file=file.path(here(),"/Results/hcrs/hcrs_updatingfmsy_10
 ```{r data_wrangling}
 
 hcr_rep5c <- hcr_rep5c %>%
-  mutate(over_limit = ifelse(f_ratio >= 2, "yes", "no")) %>% 
+  mutate(over_limit = ifelse(f_ratio >= 2, "yes",ifelse(f_ratio == 0, "close", "no"))) %>% 
   group_by(hcr)
 
 hcr_rep5u <- hcr_rep5u %>% 
-  mutate(over_limit = ifelse(f_ratio >= 2, "yes", "no")) %>% 
+  mutate(over_limit = ifelse(f_ratio >= 2, "yes",ifelse(f_ratio == 0, "close", "no"))) %>% 
   group_by(hcr)
   
 hcr_rep10c <- hcr_rep10c %>% 
-  mutate(over_limit = ifelse(f_ratio >= 2, "yes", "no")) %>% 
+  mutate(over_limit = ifelse(f_ratio >= 2, "yes",ifelse(f_ratio == 0, "close", "no"))) %>% 
   group_by(hcr)
   
 hcr_rep10u <- hcr_rep10u %>% 
-  mutate(over_limit = ifelse(f_ratio >= 2, "yes", "no")) %>% 
+  mutate(over_limit = ifelse(f_ratio >= 2, "yes",ifelse(f_ratio == 0, "close", "no"))) %>% 
   group_by(hcr)
 
 counts_rep5c <- hcr_rep5c %>%
-  filter(f_ratio != 0) %>%
   filter(r_s <= 0) %>% 
   count(over_limit) %>% 
-  spread(key = "over_limit", value = "n") %>% 
-  mutate(prop_over_limit = yes/(yes + no))
+  spread(key = "over_limit", value = "n") %>%
+  mutate(prop_over_limit = yes/(yes + no)) %>% 
+  mutate(years_active = yes + no) %>%
+  mutate(years_closed = close) %>% 
+  mutate(total_years = years_active + years_closed)
 
 counts_rep5u <- hcr_rep5u %>% 
-  filter(f_ratio != 0) %>%
   filter(r_s <= 0) %>% 
   count(over_limit) %>% 
-  spread(key = "over_limit", value = "n") %>% 
-  mutate(prop_over_limit = yes/(yes + no))
+  spread(key = "over_limit", value = "n") %>%
+  mutate(prop_over_limit = yes/(yes + no)) %>% 
+  mutate(years_active = yes + no) %>%
+  mutate(years_closed = close) %>% 
+  mutate(total_years = years_active + years_closed)
 
 counts_rep10c <- hcr_rep10c %>% 
-  filter(f_ratio != 0) %>% 
   filter(r_s <= 0) %>% 
   count(over_limit) %>% 
-  spread(key = "over_limit", value = "n") %>% 
-  mutate(prop_over_limit = yes/(yes + no))
+  spread(key = "over_limit", value = "n") %>%
+  mutate(prop_over_limit = yes/(yes + no)) %>% 
+  mutate(years_active = yes + no) %>%
+  mutate(years_closed = close) %>% 
+  mutate(total_years = years_active + years_closed)
 
 counts_rep10u <- hcr_rep10u %>% 
-  filter(f_ratio != 0) %>%
   filter(r_s <= 0) %>% 
   count(over_limit) %>% 
-  spread(key = "over_limit", value = "n") %>% 
-  mutate(prop_over_limit = yes/(yes + no))
+  spread(key = "over_limit", value = "n") %>%
+  mutate(prop_over_limit = yes/(yes + no)) %>% 
+  mutate(years_active = yes + no) %>%
+  mutate(years_closed = close) %>% 
+  mutate(total_years = years_active + years_closed)
 ```
 
 ##Graph
