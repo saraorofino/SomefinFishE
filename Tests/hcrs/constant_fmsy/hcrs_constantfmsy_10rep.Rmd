@@ -21,7 +21,7 @@ The "assessment" period of FishE in this model is every 10 years.
 
 In this experiment, the true Fmsy is adjusting over time as climate change alters productivity. However, the management decision is based on a Fmsy that is not adjusted to climate change - it is based on the initial Fmsy that would be calculated in the year 1 assessment. 
 
-The error in the F/Fmsy ratio is .1.
+The error in the F/Fmsy ratio is .3.
 
 The harvest control rules (5% - 50% reduction) will be tested over a range of climate impacts, initial growth rates, and initial biomasses.
 
