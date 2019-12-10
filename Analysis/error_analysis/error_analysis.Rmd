@@ -17,10 +17,10 @@ library(tidyverse)
 library(here)
 
 #Data
-err_rep5c <- read_csv(file=file.path(here(),"/Results/error/error_constant_rep5.csv"))
 err_rep5u <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep5.csv"))
-err_rep10c <- read_csv(file=file.path(here(),"/Results/error/error_constant_rep10.csv"))
+err_rep5u_2 <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep5_.1-.25.csv"))
 err_rep10u <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep10.csv"))
+err_rep10u_2 <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep10_.1-.25.csv"))
 
 ```
 
@@ -55,6 +55,21 @@ rep5u_no <- err_rep5u %>%
 #Now I want to transform the error into factors
 rep5u_no$error <- as.factor(rep5u_no$error)
 
+###### Repeat the process for the error between 0.1 and 0.3:
+rep5u2_no <- err_rep5u_2 %>%
+  filter(r_s <= 0) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  filter(decision_made == "yes") %>% 
+  group_by(error, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5u" = n) %>% 
+  spread(key = "correct_decision", value = "count_5u") %>%
+  mutate(total_decisions_made = sum(no + yes)) %>% 
+  mutate(prop_no = no/total_decisions_made)
+
+#Now I want to transform the error into factors
+rep5u2_no$error <- as.factor(rep5u2_no$error)
+
 ```
 
 
@@ -74,6 +89,20 @@ rep5u_fail <- err_rep5u %>%
 
 #Now I want to transform the error into factors
 rep5u_fail$error <- as.factor(rep5u_fail$error)
+
+###### Repeat the process for the error between 0.1 and 0.3:
+rep5u2_fail <- err_rep5u_2 %>% 
+  filter(r_s <= 0) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(error, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5u" = n) %>% 
+  spread(key = "correct_decision", value = "count_5u") %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_fail = fail / total_decisions)
+
+#Now I want to transform the error into factors
+rep5u2_fail$error <- as.factor(rep5u2_fail$error)
 ```
 
 
@@ -100,7 +129,20 @@ rep10u_no <- err_rep10u %>%
 #Now I want to transform the error into factors
 rep10u_no$error <- as.factor(rep10u_no$error)
 
+###### Repeat the process for the error between 0.1 and 0.3:
+rep10u2_no <- err_rep10u_2 %>%
+  filter(r_s <= 0) %>% 
+  filter(year == 1 | year %in% assess_10) %>% 
+  filter(decision_made == "yes") %>% 
+  group_by(error, correct_decision) %>% 
+  tally() %>% 
+  rename("count_10u" = n) %>% 
+  spread(key = "correct_decision", value = "count_10u") %>% 
+  mutate(total_decisions_made = sum(no + yes)) %>% 
+  mutate(prop_no = no/total_decisions_made)
 
+#Now I want to transform the error into factors
+rep10u2_no$error <- as.factor(rep10u2_no$error)
 ```
 
 Now I want to see how many "fails" were included in each error category
@@ -120,12 +162,27 @@ rep10u_fail <- err_rep10u %>%
 #Now I want to transform the error into factors
 rep10u_fail$error <- as.factor(rep10u_fail$error)
 
+###### Repeat the process for the error between 0.1 and 0.3:
+rep10u2_fail <- err_rep10u_2 %>% 
+  filter(r_s <= 0) %>% 
+  filter(year == 1 | year %in% assess_10) %>% 
+  group_by(error, correct_decision) %>% 
+  tally() %>% 
+  rename("count_10u" = n) %>% 
+  spread(key = "correct_decision", value = "count_10u") %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_fail = fail / total_decisions)
+
+#Now I want to transform the error into factors
+rep10u2_fail$error <- as.factor(rep10u2_fail$error)
+
 ```
 
 ##Table
 
+**Rep5**
 Proportion of yes/no/fail for 5 year updating Fmsy at the three different errors:
-```{r rep5-table}
+```{r rep5-table, echo=FALSE, message=FALSE}
 library(kableExtra)
 
 rep5 <- err_rep5u %>% 
@@ -153,8 +210,36 @@ rep5_table <- kable(rep5, col.names = c("Error", "Number of Assessments", "Fail"
 rep5_table
 ```
 
+Proportion of yes/no/fail for 5 year updating Fmsy at the three errors between 0.1 and 0.3:
+```{r rep5-table2, echo=FALSE}
+rep5_2 <- err_rep5u_2 %>% 
+  filter(r_s <= 0) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(error, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5u" = n) %>% 
+  spread(key = "correct_decision", value = "count_5u") %>% 
+  mutate(total_assessments = sum(yes + no + fail)) %>% 
+  mutate(decisions_made = sum(yes + no)) %>% 
+  mutate(prop_fail = round(fail / total_assessments, digits = 3)) %>% 
+  mutate(prop_no = round(no / decisions_made, digits = 3)) %>% 
+  mutate(prop_yes = round(yes / decisions_made, digits = 3)) %>% 
+  select(error, total_assessments, fail, prop_fail, decisions_made, yes, prop_yes, no, prop_no)
+
+rep5_table2 <- kable(rep5_2, col.names = c("Error", "Number of Assessments", "Fail", "Proportion of Failures", "Number of Decisions Made",
+                                        "Number of Yes", "Proportion of Yes", "Number of No", "Proportion of No")) %>% 
+  kable_styling(bootstrap_options = c("striped", "bordered", "condensed"), full_width = F) %>% 
+  row_spec(0, align = "c", font_size = 10) %>% 
+  row_spec(1, font_size = 10) %>% 
+  row_spec(2, font_size = 10) %>% 
+  row_spec(3, font_size = 10)
+
+rep5_table2
+```
+**Rep10**
+
 Proportion of yes/no/fail for 10 year updating Fmsy at the three different errors:
-```{r rep10-table}
+```{r rep10-table, echo=FALSE}
 rep10 <- err_rep10u %>% 
   filter(r_s <= 0) %>% 
   filter(year == 1 | year %in% assess_10) %>% 
@@ -179,45 +264,94 @@ rep10_table <- kable(rep10, col.names = c("Error", "Number of Assessments", "Fai
 
 rep10_table
 ```
+Proportion of yes/no/fail for 10 year updating Fmsy at the three different errors between 0.1 and 0.3:
+```{r rep10-table2, echo=FALSE}
+rep10_2 <- err_rep10u_2 %>% 
+  filter(r_s <= 0) %>% 
+  filter(year == 1 | year %in% assess_10) %>% 
+  group_by(error, correct_decision) %>% 
+  tally() %>% 
+  rename("count_10u" = n) %>% 
+  spread(key = "correct_decision", value = "count_10u") %>% 
+  mutate(total_assessments = sum(yes + no + fail)) %>% 
+  mutate(decisions_made = sum(yes + no)) %>% 
+  mutate(prop_fail = round(fail / total_assessments, digits = 3)) %>% 
+  mutate(prop_no = round(no / decisions_made, digits = 3)) %>% 
+  mutate(prop_yes = round(yes / decisions_made, digits = 3)) %>% 
+  select(error, total_assessments, fail, prop_fail, decisions_made, yes, prop_yes, no, prop_no)
+
+rep10_table2 <- kable(rep10_2, col.names = c("Error", "Number of Assessments", "Fail", "Proportion of Failures", "Number of Decisions Made",
+                                        "Number of Yes", "Proportion of Yes", "Number of No", "Proportion of No")) %>% 
+  kable_styling(bootstrap_options = c("striped", "bordered", "condensed"), full_width = F) %>% 
+  row_spec(0, align = "c", font_size = 10) %>% 
+  row_spec(1, font_size = 10) %>% 
+  row_spec(2, font_size = 10) %>% 
+  row_spec(3, font_size = 10)
+
+rep10_table2
+```
 
 
 ##Visualizations
 
 Experiment with a few ways of visualizing this data
 
-Rep5
+**Rep5**
 
 First try proportion of failures on the y-axis with error categories on the x-axis for updating Fmsy
-```{r rep5-viz1}
+```{r rep5-viz1, echo=FALSE}
 
 fail5 <- ggplot(rep5u_no, aes(x = error, y= prop_no)) +
   geom_point(aes(color = "No")) + 
   geom_point(aes(x = error, y = prop_fail, color = "Fail"), data = rep5u_fail) + 
   scale_color_manual(breaks = c("No", "Fail"), values = c("midnightblue", "firebrick4")) +
+  scale_y_continuous(limits = c(0,0.81), breaks = seq(0.1,0.8, 0.2)) +
   labs(x = "Error", y = "Proportion") +
   guides(color=guide_legend(title=NULL)) +
   theme_bw() 
 
 fail5
 
+#######Repeat for error between 0.1 and 0.3:
+fail5_2 <- ggplot(rep5u2_no, aes(x = error, y= prop_no)) +
+  geom_point(aes(color = "No"), alpha = 0.4) + 
+  geom_point(aes(x = error, y = prop_fail, color = "Fail"), alpha = 0.4, data = rep5u2_fail) + 
+  scale_color_manual(breaks = c("No", "Fail"), values = c("midnightblue", "firebrick4")) +
+  scale_y_continuous(limits = c(0,0.81), breaks = seq(0.1,0.8, 0.2)) +
+  labs(x = "Error", y = "Proportion") +
+  guides(color=guide_legend(title=NULL)) +
+  theme_bw() 
 
+fail5_2
 ```
 
-Rep10
+**Rep10**
 
 First try proportion of failures on the y-axis with error categories on the x-axis for updating Fmsy
-```{r rep10-viz1}
+```{r rep10-viz1, echo=FALSE}
 
 fail10 <- ggplot(rep10u_no, aes(x = error, y= prop_no)) +
   geom_point(aes(color = "No")) + 
   geom_point(aes(x = error, y = prop_fail, color = "Fail"), data = rep10u_fail) + 
   scale_color_manual(breaks = c("No", "Fail"), values = c("midnightblue", "firebrick4")) +
+  scale_y_continuous(limits = c(0,0.81), breaks = seq(0.1,0.8, 0.2)) +
   labs(x = "Error", y = "Proportion") +
   guides(color=guide_legend(title=NULL)) +
   theme_bw() 
 
 fail10
 
+#######Repeat for error between 0.1 and 0.3:
+fail10_2 <- ggplot(rep10u2_no, aes(x = error, y= prop_no)) +
+  geom_point(aes(color = "No")) + 
+  geom_point(aes(x = error, y = prop_fail, color = "Fail"), data = rep10u2_fail) + 
+  scale_color_manual(breaks = c("No", "Fail"), values = c("midnightblue", "firebrick4")) +
+  scale_y_continuous(limits = c(0,0.81), breaks = seq(0.1,0.8, 0.2)) +
+  labs(x = "Error", y = "Proportion") +
+  guides(color=guide_legend(title=NULL)) +
+  theme_bw() 
+
+fail10_2
 ```
 
 
