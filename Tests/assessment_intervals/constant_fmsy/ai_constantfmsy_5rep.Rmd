@@ -25,7 +25,7 @@ The "assessment" period of FishE in this model is every 5 years.
 
 In this experiment, the true Fmsy is adjusting over time as climate change alters productivity. However, the management decision is based on a Fmsy that is not adjusted to climate change - it is based on the initial Fmsy that would be calculated in the year 1 assessment. 
 
-The error in the F/Fmsy ratio is .1.
+The error in the F/Fmsy ratio is .3.
 
 The test will cover a range of climate impacts, initial growth rates, and initial biomasses, with a 10% reduction hcr.
 
@@ -74,19 +74,25 @@ sim_ai <- function(b, r, r_s, error, p, k, years, hcr){
   r_calc1 <- results$r[1]
   results$f_msy[1] <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1 based on historical parameters
   results$f_ratio[1] = f_int/results$f_msy[1] #calculate the actual f_ratio from initial fishing pressure (this is basically f in time t-1) and fmsy
-  results$f_ratio_p[1] = results$f_ratio[1] #this is the perceived f ratio by the fisheries managers - with climate change, this perceived ratio will not have an adjusted fmsy as productivity changes
-  log_err = exp(rnorm(1, mean = results$f_ratio_p[1], sd = (error*results$f_ratio_p[1]))) #simulate error in the f ratio estimate based on the f ratio perceived by fisheries managers
-  results$f_ratio_err[1] = log(log_err)
+  results$f_ratio_p[1] = results$f_ratio[1] #this is the perceived f ratio by the fisheries managers - with climate change, this perceived ratio will not adjust fmsy as climate shifts productivity
+
+  #Log transform the mean (m) and stdev (s):
+  mu_1 <- log(results$f_ratio_p[1]) 
+  cv <- error
+  sd_1 <- sqrt(log(cv^2+1))
+  
+  #Draw the f_ratio_err:
+  results$f_ratio_err[1] <- rlnorm(1, meanlog = mu_1, sdlog = sd_1)
 
   
   #Decide how to change f based on the f ratio estimate with error:
   if(results$f_ratio_err[1] >= 2){
        results$f[1] = 0 #Close the fishery
    } 
-    if(results$f_ratio_err[1] > 1 & results$f_ratio_err[1] < 2){
-       results$f[1] = hcr*f_int #Reduce by the hcr (10%)
+    if(results$f_ratio_err[1] > 1.1 & results$f_ratio_err[1] < 2){
+       results$f[1] = hcr*f_int #Reduce by hcr
    }  
-    if(results$f_ratio_err[1] == 1){
+    if(results$f_ratio_err[1] > 1 & results$f_ratio_err[1] < 1.1){
        results$f[1] = f_int  #f stays the same in as last year
    }
     if(results$f_ratio_err[1] < 1){
@@ -108,24 +114,33 @@ sim_ai <- function(b, r, r_s, error, p, k, years, hcr){
     r_calc2 <- results$r[t]
     results$f_msy[t] <- fmsy(r=r_calc2, p=p)
     results$f_ratio[t] <- results$f[t-1]/results$f_msy[t-1] #the ratio of f/fmsy at the beginning of the year is based on last years f and fmsy
-    results$f_ratio_p[t] <- results$f[t-1]/results$f_msy[1] #the perceived f ratio is based on the original fmsy calculation
-    log_err = exp(rnorm(1, mean = results$f_ratio_p[t], sd = (error*results$f_ratio_p[t]))) #simulate error in the perceived f ratio estimate
-    results$f_ratio_err[t] = log(log_err)
+    results$f_ratio_p[t] <- results$f[t-1]/results$f_msy[1] #the perceived f ratio is based on the original fmsy from the first assessment
+
+    #Transform to new mean (mu)
+    if(results$f_ratio_p[t] != 0){
+       #Assign values to normal dist mean (m):
+       mu_2 <- log(results$f_ratio_p[t])
+       #Draw the f_ratio_err
+       results$f_ratio_err[t] <- rlnorm(1, meanlog = mu_2, sdlog = sd_1)
+    }
+    if(results$f_ratio_p[t] == 0){
+       results$f_ratio_err[t] = 0
+    }
 
     
     #Decisions for f this year based on the ratio with error in the previous year 
     if(results$f_ratio_err[t] >= 2){
        results$f[t] = 0 
    } 
-    if(results$f_ratio_err[t] > 1 & results$f_ratio_err[t] < 2){
-       results$f[t] = hcr*results$f[t-1] # hcr is defined by the hcr that is being tested in each run
+    if(results$f_ratio_err[t] > 1.1 & results$f_ratio_err[t] < 2){
+       results$f[t] = hcr*results$f[t-1] #Reduce by hcr - same thing as keeping (hcr%) of previous fishing mortality
    }  
-    if(results$f_ratio_err[t] == 1){
+    if(results$f_ratio_err[t] > 1 & results$f_ratio_err[t] < 1.1){
        results$f[t] = results$f[t-1]  #f stays the same in as last year
    }
     if(results$f_ratio_err[t] < 1){
        results$f[t] = 1.05*results$f[t-1] #f increases by 5% from last year
-   } 
+   }
     
     
     #Calculate remaining results - pay attention to the order!
@@ -170,7 +185,7 @@ list_ai <- list(
   b = c(1500, 4000, 6000),
   r = seq(0.1, .8, .1),
   r_s = seq(-0.01767, 0.01623, 0.002),
-  error = 0.1,
+  error = 0.3,
   p = 0.2,
   k = 10000,
   years = 100,
@@ -229,9 +244,9 @@ results_ai <- bind_rows(results_id)
 #Update the column names:
 colnames(results_ai) <- col_names
 
-#Write as CSV:
-library(here)
- write.csv(results_ai, file=file.path(here(),"/Tests/assessment_intervals/results_csv/ai_constantyfmsy_5rep.csv"),
-           row.names = FALSE)
+# #Write as CSV:
+# library(here)
+#  write.csv(results_ai, file=file.path(here(),"/Results/assessment_intervals/ai_constantyfmsy_5rep.csv"),
+#            row.names = FALSE)
 
 ```
