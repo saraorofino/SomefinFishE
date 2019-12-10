@@ -121,9 +121,8 @@ sim_10c <- function(b, r, r_s, error, p, k, years){
     results$f_msy[t] <- fmsy(r=r_calc2, p=p)
     results$f_ratio[t] <- results$f[t-1]/results$f_msy[t-1] #the ratio of f/fmsy at the beginning of the year is based on last years f and fmsy
 
-    #Transform to new mean (mu) and stdev (stdev)
+    #Transform to new mean (mu) if f_ratio is greater than 0:
     if(results$f_ratio[t] != 0){
-       #Assign values to normal dist mean (m):
        mu_2 <- log(results$f_ratio[t])
        #Draw the f_ratio_err
        results$f_ratio_err[t] <- rlnorm(1, meanlog = mu_2, sdlog = sd_1)
