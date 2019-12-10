@@ -12,7 +12,7 @@ library(RColorBrewer)
 library(here)
 
 #Read in the perfect management data:
-perfect <- read_csv(file=file.path(here(),"/FISHE_tests/perfect_management/csv_results/perfect.csv"))
+perfect <- read_csv(file=file.path(here(),"/Tests/perfect_management/csv_results/perfect.csv"))
 ```
 
 Example graph to show what the best possible management outcomes could be under a certain climate change velocity and magnitude.
