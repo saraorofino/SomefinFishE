@@ -26,17 +26,17 @@ err_rep10u_2 <- read_csv(file=file.path(here(),"/Results/error/error_updating_re
 
 
 ##Decision Calculation
- - Filter negative climate change 
- - Filter for assessment years ONLY
- - Group simulations by error percentage
- - Count the number of times the model chose a ratio that led the manager to make the wrong decision
+ - Filter negative climate change   
+ - Filter for assessment years ONLY  
+ - Group simulations by error percentage  
+ - Count the number of times the model chose a ratio that led the manager to make the wrong decision   
 
-Rep5 - Updating
-Do some basic data wrangling for 5 year intervals where Fmsy updating with climate change:
-  - Look at all negative climate change scenarios
-  - Look at ONLY assessments where a decision was actually made (filter out times when the fishery was closed)
-  - Group by error percentage 
-```{r wrangle-5u-basic}
+**Rep5 - Updating**  
+Do some basic data wrangling for 5 year intervals where Fmsy updating with climate change:  
+  - Look at all negative climate change scenarios  
+  - Look at ONLY assessments where a decision was actually made (filter out times when the fishery was closed)  
+  - Group by error percentage   
+```{r wrangle-5u-basic, include=FALSE}
 #Assessment years:
 assess_5 <- seq(5,100,5)
 
@@ -52,9 +52,6 @@ rep5u_no <- err_rep5u %>%
   mutate(total_decisions_made = sum(no + yes)) %>% 
   mutate(prop_no = no/total_decisions_made)
 
-#Now I want to transform the error into factors
-rep5u_no$error <- as.factor(rep5u_no$error)
-
 ###### Repeat the process for the error between 0.1 and 0.3:
 rep5u2_no <- err_rep5u_2 %>%
   filter(r_s <= 0) %>% 
@@ -67,14 +64,15 @@ rep5u2_no <- err_rep5u_2 %>%
   mutate(total_decisions_made = sum(no + yes)) %>% 
   mutate(prop_no = no/total_decisions_made)
 
-#Now I want to transform the error into factors
-rep5u2_no$error <- as.factor(rep5u2_no$error)
-
+## Add the 0.1 error to the beginning and the 0.3 error to the end:
+rep5u_combined <- rbind(rep5u2_no, rep5u_no) %>% 
+  filter(error != 0.5) %>% 
+  arrange(error)
 ```
 
 
 Now I want to see how many "fails" were included in each error category
-```{r 5u-fails}
+```{r 5u-fails, include=FALSE}
 
 #Find the proportion of yes, no, and fail for each error category
 rep5u_fail <- err_rep5u %>% 
@@ -87,9 +85,6 @@ rep5u_fail <- err_rep5u %>%
   mutate(total_decisions = sum(yes + no + fail)) %>% 
   mutate(prop_fail = fail / total_decisions)
 
-#Now I want to transform the error into factors
-rep5u_fail$error <- as.factor(rep5u_fail$error)
-
 ###### Repeat the process for the error between 0.1 and 0.3:
 rep5u2_fail <- err_rep5u_2 %>% 
   filter(r_s <= 0) %>% 
@@ -101,15 +96,17 @@ rep5u2_fail <- err_rep5u_2 %>%
   mutate(total_decisions = sum(yes + no + fail)) %>% 
   mutate(prop_fail = fail / total_decisions)
 
-#Now I want to transform the error into factors
-rep5u2_fail$error <- as.factor(rep5u2_fail$error)
+## Add the 0.1 error to the beginning and the 0.3 error to the end:
+rep5u_combined_fail <- rbind(rep5u2_fail, rep5u_fail) %>% 
+  filter(error != 0.5) %>% 
+  arrange(error)
 ```
 
 
 
-Rep10 - Updating
+**Rep10 - Updating**  
 Data wrangling for 10 year intervals where Fmsy is updating with climate change:
-```{r wrangle-10u-basic}
+```{r wrangle-10u-basic, include=FALSE}
 
 #Assessment years:
 assess_10 <- seq(10,100,10)
@@ -126,8 +123,6 @@ rep10u_no <- err_rep10u %>%
   mutate(total_decisions_made = sum(no + yes)) %>% 
   mutate(prop_no = no/total_decisions_made)
 
-#Now I want to transform the error into factors
-rep10u_no$error <- as.factor(rep10u_no$error)
 
 ###### Repeat the process for the error between 0.1 and 0.3:
 rep10u2_no <- err_rep10u_2 %>%
@@ -141,12 +136,14 @@ rep10u2_no <- err_rep10u_2 %>%
   mutate(total_decisions_made = sum(no + yes)) %>% 
   mutate(prop_no = no/total_decisions_made)
 
-#Now I want to transform the error into factors
-rep10u2_no$error <- as.factor(rep10u2_no$error)
+## Add the 0.1 error to the beginning and the 0.3 error to the end:
+rep10u_combined <- rbind(rep10u2_no, rep10u_no) %>% 
+  filter(error != 0.5) %>% 
+  arrange(error)
 ```
 
 Now I want to see how many "fails" were included in each error category
-```{r 10u-fails}
+```{r 10u-fails, include=FALSE}
 
 #Find the proportion of yes, no, and fail for each error category
 rep10u_fail <- err_rep10u %>% 
@@ -159,8 +156,7 @@ rep10u_fail <- err_rep10u %>%
   mutate(total_decisions = sum(yes + no + fail)) %>% 
   mutate(prop_fail = fail / total_decisions)
 
-#Now I want to transform the error into factors
-rep10u_fail$error <- as.factor(rep10u_fail$error)
+
 
 ###### Repeat the process for the error between 0.1 and 0.3:
 rep10u2_fail <- err_rep10u_2 %>% 
@@ -173,14 +169,15 @@ rep10u2_fail <- err_rep10u_2 %>%
   mutate(total_decisions = sum(yes + no + fail)) %>% 
   mutate(prop_fail = fail / total_decisions)
 
-#Now I want to transform the error into factors
-rep10u2_fail$error <- as.factor(rep10u2_fail$error)
-
+## Add the 0.1 error to the beginning and the 0.3 error to the end:
+rep10u_combined_fail <- rbind(rep10u2_fail, rep10u_fail) %>% 
+  filter(error != 0.5) %>% 
+  arrange(error)
 ```
 
 ##Table
 
-**Rep5**
+**Rep5**  
 Proportion of yes/no/fail for 5 year updating Fmsy at the three different errors:
 ```{r rep5-table, echo=FALSE, message=FALSE}
 library(kableExtra)
@@ -236,7 +233,7 @@ rep5_table2 <- kable(rep5_2, col.names = c("Error", "Number of Assessments", "Fa
 
 rep5_table2
 ```
-**Rep10**
+**Rep10**  
 
 Proportion of yes/no/fail for 10 year updating Fmsy at the three different errors:
 ```{r rep10-table, echo=FALSE}
@@ -294,13 +291,17 @@ rep10_table2
 
 ##Visualizations
 
-Experiment with a few ways of visualizing this data
+Experiment with a few ways of visualizing this data  
 
-**Rep5**
+**Rep5**  
 
 First try proportion of failures on the y-axis with error categories on the x-axis for updating Fmsy
 ```{r rep5-viz1, echo=FALSE}
+#Transform the error into factors for graphing:
+rep5u_no$error <- as.factor(rep5u_no$error)
+rep5u_fail$error <- as.factor(rep5u_fail$error)
 
+#Graph:
 fail5 <- ggplot(rep5u_no, aes(x = error, y= prop_no)) +
   geom_point(aes(color = "No")) + 
   geom_point(aes(x = error, y = prop_fail, color = "Fail"), data = rep5u_fail) + 
@@ -313,9 +314,14 @@ fail5 <- ggplot(rep5u_no, aes(x = error, y= prop_no)) +
 fail5
 
 #######Repeat for error between 0.1 and 0.3:
-fail5_2 <- ggplot(rep5u2_no, aes(x = error, y= prop_no)) +
+#Transform the error into factors for graphing:
+rep5u_combined$error <- as.factor(rep5u_combined$error)
+rep5u_combined_fail$error <- as.factor(rep5u_combined_fail$error)
+
+#Graph:
+fail5_2 <- ggplot(rep5u_combined, aes(x = error, y= prop_no)) +
   geom_point(aes(color = "No"), alpha = 0.4) + 
-  geom_point(aes(x = error, y = prop_fail, color = "Fail"), alpha = 0.4, data = rep5u2_fail) + 
+  geom_point(aes(x = error, y = prop_fail, color = "Fail"), alpha = 0.4, data = rep5u_combined_fail) + 
   scale_color_manual(breaks = c("No", "Fail"), values = c("midnightblue", "firebrick4")) +
   scale_y_continuous(limits = c(0,0.81), breaks = seq(0.1,0.8, 0.2)) +
   labs(x = "Error", y = "Proportion") +
@@ -325,11 +331,15 @@ fail5_2 <- ggplot(rep5u2_no, aes(x = error, y= prop_no)) +
 fail5_2
 ```
 
-**Rep10**
+**Rep10**  
 
 First try proportion of failures on the y-axis with error categories on the x-axis for updating Fmsy
 ```{r rep10-viz1, echo=FALSE}
+#Transform the error into factors for grpahing:
+rep10u_no$error <- as.factor(rep10u_no$error)
+rep10u_fail$error <- as.factor(rep10u_fail$error)
 
+#Graph:
 fail10 <- ggplot(rep10u_no, aes(x = error, y= prop_no)) +
   geom_point(aes(color = "No")) + 
   geom_point(aes(x = error, y = prop_fail, color = "Fail"), data = rep10u_fail) + 
@@ -342,9 +352,15 @@ fail10 <- ggplot(rep10u_no, aes(x = error, y= prop_no)) +
 fail10
 
 #######Repeat for error between 0.1 and 0.3:
-fail10_2 <- ggplot(rep10u2_no, aes(x = error, y= prop_no)) +
+#Transform the error into factors for graphing:
+rep10u_combined$error <- as.factor(rep10u_combined$error)
+rep10u_combined_fail$error <- as.factor(rep10u_combined_fail$error)
+
+
+#Graph:
+fail10_2 <- ggplot(rep10u_combined, aes(x = error, y= prop_no)) +
   geom_point(aes(color = "No")) + 
-  geom_point(aes(x = error, y = prop_fail, color = "Fail"), data = rep10u2_fail) + 
+  geom_point(aes(x = error, y = prop_fail, color = "Fail"), data = rep10u_combined_fail) + 
   scale_color_manual(breaks = c("No", "Fail"), values = c("midnightblue", "firebrick4")) +
   scale_y_continuous(limits = c(0,0.81), breaks = seq(0.1,0.8, 0.2)) +
   labs(x = "Error", y = "Proportion") +
@@ -356,6 +372,113 @@ fail10_2
 
 
 
+##Probability of Collapse
+
+What's the probability the fishery collapses under different amounts of error?  
+
+
+Find how many of the 1224 experiments collapsed. What was the most common year of collapse? The earliest year of collapse? The latest year of collapse? what's the probability of the fishery collapsing at 5 or 10 year intervals if the error range is 0.1-0.5 vs 0.15-0.25?     
+```{r number-collapsed, include=FALSE}
+total_experiments <- 1224
+
+###### Rep 5
+#How many fisheries (aka how many unique Ids) collapsed 
+rep5_collapsed <- err_rep5u %>% 
+  filter(decision_made == "no") %>% 
+  group_by(id) %>% 
+  tally() #this is column (n) is the number of "fail" per ID - ex: 96 means it failed in year 4 and had 96/100 years recorded as fail
+
+collapse_rep5 <- nrow(rep5_collapsed) #Number of experiments (unique ids) that collapsed 
+
+#Find the most common number of years collapsed:
+# R doesn't have a function for finding the mode so you have to create one
+getmode <- function(x) {
+   uniqx <- unique(x)
+   uniqx[which.max(tabulate(match(x, uniqx)))]
+}
+
+rep5_mode <- getmode(x = rep5_collapsed$n) #most common number of years failed (year of failure = 100 - rep5_mode)
+rep5_max <- min(rep5_collapsed$n) #smallest number of years failed will be the fishery that collapsed latest (year of collapse = 100 - rep5_max)
+rep5_min <- max(rep5_collapsed$n) #largest number of years failed will be fishery that collapsed the earliest (year of collapse = 100 - rep5_min)
+
+rep5_prob <- collapse_rep5 / total_experiments #Probability of collapse
+
+##Repeat for error between 0.1 and 0.3:
+rep5_collapsed2 <- err_rep5u_2 %>% 
+  filter(decision_made == "no") %>% 
+  group_by(id) %>% 
+  tally()
+
+collapse2_rep5 <- nrow(rep5_collapsed2)
+
+rep5_mode2 <- getmode(x = rep5_collapsed2$n) 
+rep5_max2 <- min(rep5_collapsed2$n) 
+rep5_min2 <- max(rep5_collapsed2$n) 
+
+rep5_prob2 <- collapse2_rep5 / total_experiments
+###### Rep 10 
+rep10_collapsed <- err_rep10u %>% 
+  filter(decision_made == "no") %>% 
+  group_by(id) %>% 
+  tally()
+
+collapse_rep10 <- nrow(rep10_collapsed)
+rep10_mode <- getmode(x = rep10_collapsed$n)
+rep10_max <- min(rep10_collapsed$n)
+rep10_min <- max(rep10_collapsed$n)
+
+rep10_prob <- collapse_rep10 / total_experiments
+
+##Repeat for error between 0.1 and 0.3:
+rep10_collapsed2 <- err_rep10u_2 %>% 
+  filter(decision_made == "no") %>% 
+  group_by(id) %>% 
+  tally()
+
+collapse2_rep10 <- nrow(rep10_collapsed2)
+
+rep10_mode2 <- getmode(x = rep10_collapsed2$n) 
+rep10_max2 <- min(rep10_collapsed2$n) 
+rep10_min2 <- max(rep10_collapsed2$n) 
+
+rep10_prob2 <- collapse2_rep10 / total_experiments
+```
+
+
+**Rep5**  
+In the first experiment (error 0.1, 0.3, 0.5) 538 fisheries collapsed    
+ - Most common year of collapse = 4  
+ - Minimum = Year 4  
+ - Maximum = Year 99   
+
+Probability of collapse = 43.95%   
+
+Looking at the error between 0.1 and 0.3 only 331 fisheries collapsed  
+ - Most common year of collapse = 4    
+ - Minimum = Year 4    
+ - Maximum = Year 99     
+
+Probability of collapse = 27.04%     
+
+**Rep10**  
+In the first experiment (error 0.1, 0.3, 0.5) 503 fisheries collapsed     
+ - Most common year of collapse = 9   
+ - Minimum = Year 9  
+ - Maximum = Year 99   
+
+Probability of collapse = 41.09%  
+
+Looking at the error between 0.1 and 0.3 only 376 fisheries collapsed   
+ - Most common year of collapse = 9  
+ - Minimum = Year 9  
+ - Maximum = Year 99   
+
+Probability of collapse = 30.72%     
+
+For both 5 and 10 year intervals  the most common year of fishery collapse was the year before the next assessment   
+
+
+Now we want a little more detail about the collapsed fisheries. How many fisheries collapsed at a 0.5 error vs a 0.1 error? How many fisheries collapsed if the starting biomass was 1500 vs 6000? How many fisheries collapsed at different magnitudes of climate change? How many of the collapsed fisheries had slow vs. fast growth rates?  
 
 
 

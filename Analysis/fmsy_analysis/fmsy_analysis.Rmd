@@ -1,0 +1,20 @@
+---
+title: "fmsy_analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#Packages
+library(tidyverse)
+library(here)
+
+#Data
+msy_rep5c <- read_csv(file=file.path(here(),"/Results/fmsy_update/msy_constant_rep5.csv"))
+msy_rep10c <- read_csv(file=file.path(here(),"/Results/fmsy_update/msy_constant_rep10.csv"))
+msy_rep5u <- read_csv(file=file.path(here(),"/Results/fmsy_update/msy_updating_rep5.csv"))
+msy_rep10u <- read_csv(file=file.path(here(),"/Results/fmsy_update/msy_updating_rep10.csv"))
+
+```
+
