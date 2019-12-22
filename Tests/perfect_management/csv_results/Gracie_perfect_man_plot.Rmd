@@ -1,0 +1,204 @@
+---
+title: "perfect_man_plot"
+author: "Gracie White"
+date: "12/21/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+
+library(tidyverse)
+library(here)
+library(viridis)
+library(viridisLite)
+
+perfect_man <- read_csv("perfect.csv")
+
+```
+
+Simple Initial Plot
+```{r}
+
+perfect_df <- perfect_man %>% 
+  group_by(id) 
+#%>% 
+ # filter(f!=0) %>% 
+  #filter(r_s < 0 & r_s >= -0.007)%>% 
+  #filter(error == 0.3)
+
+
+
+perfect_man_plot <- ggplot(perfect_df, aes(x = year, y = b, group = id)) +
+  geom_line(aes(color = r_0)) +
+  theme_bw() +
+  scale_color_continuous(low = "#079EDF", high = "#B8CE55", name = "Growth Rate") +
+  labs(title = "Perfect Management", y = "Biomass", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold"))
+
+
+perfect_man_plot
+
+
+
+```
+
+Ok so everything looks peachy. Seems like most of the differences are within the first 25 years, let's zoom in on that. 
+
+```{r}
+
+zoomed_perf_df <- perfect_df %>% 
+  filter(year <= 25)
+
+zoomed_perf_plot <- ggplot(zoomed_perf_df, aes(x = year, y = b, group = id)) +
+  geom_line(aes(color = r_s)) +
+  theme_bw() +
+  scale_color_continuous(low = "#079EDF", high = "#B8CE55", name = "R Slope") +
+  labs(title = "Perfect Management", y = "Biomass", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold"))
+
+
+zoomed_perf_plot
+
+
+```
+
+Ok so it seems like initial growth rate is the most heavily weighted variable. I think I'll try to make it discrete and split by color to make it clear, and then maybe have the alpha change by r slope. 
+
+```{r}
+
+zoomed_perf_df <- perfect_df %>% 
+  filter(year <= 25)
+
+zoomed_perf_df$r_0 <- as.factor(zoomed_perf_df$r_0)
+
+zoomed_perf_discrete_plot <- ggplot(zoomed_perf_df, aes(x = year, y = b, group = id)) +
+  geom_line(aes(color = r_0, alpha = r_s)) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "R Slope") +
+  labs(title = "Perfect Management", y = "Biomass", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold"))
+
+
+zoomed_perf_discrete_plot
+
+
+```
+
+Ok so I've made a rainbow whale tail. I'm going to try and do one line per r_0 as the mean. Propably not the most "correct" way to view this, but there are just so many lines!
+```{r}
+
+perfect_mean_df <- perfect_man %>% 
+  group_by(r_0, year) %>%
+  summarise(b = mean(b)) %>% 
+  filter(year <= 50)
+
+perfect_mean_df$r_0 <- as.factor(perfect_mean_df$r_0)
+
+
+zoomed_perf_mean_plot <- ggplot(perfect_mean_df, aes(x = year, y = b, color = r_0)) +
+  geom_line() +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "Growth Rate") +
+  labs(title = "Perfect Management, R_0 means", y = "Biomass", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold"))
+
+
+zoomed_perf_mean_plot
+
+
+```
+
+Looks kinda weird but mathetmatically does make sense for means given the different starting biomasses. From the graph above when they were still separtated by ID, it looks like high initial biomasses went down to msy faster than already depleted stocks grew to msy. Note that it takes 50 years for the mean slowest growing species to grow to MSY even under perfect management. 
+
+Ok so maybe now we switch to looking at catch, since that's what people care about more, and it transltes to $$$$...
+
+```{r}
+
+perfect_catch_plot <- ggplot(perfect_df, aes(x = year, y = c, group = id)) +
+  geom_line(aes(color = r_0)) +
+  theme_bw() +
+  scale_color_viridis(name = "Growth Rate") +
+  labs(title = "Perfect Management", y = "Catch", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold"))
+
+
+perfect_catch_plot
+
+#it looks like a unicorn vomitted
+
+
+```
+
+Let's zoom in and simplify
+
+```{r}
+
+
+perf_catch_simple <- perfect_df %>% 
+  mutate(initial_r = ifelse(r_0 <= .3, "slow-growing", ifelse(r_0 >.3 & r_0 <= .5, "medium-growing", "fast-growing"))) %>% 
+  mutate(climate_severity = ifelse(r_s <= -.009, "severe_negative", ifelse(r_s >-.009 & r_s <= -.0001, "mild_negative", "positive"))) %>% 
+  filter(year <= 25)
+  
+perf_catch_simple$r_0 <- as.factor(perf_catch_simple$r_0)
+perf_catch_simple$r_s <- as.factor(perf_catch_simple$r_s)
+
+perf_catch_simple_plot <- ggplot(perf_catch_simple, aes(x = year, y = c, group = id)) +
+  geom_line(aes(color = r_0)) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "Growth Rate") +
+  labs(title = "Perfect Management - Catch", y = "Catch", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")) +
+  facet_grid(initial_r~climate_severity)
+
+
+perf_catch_simple_plot
+
+```
+
+Ok that's fairly interesting. Now I want to look at sum catch over 25 years, and maybe try box and whisker plots for each growth rate. 
+
+```{r}
+
+  
+perf_catch_simple$r_0 <- as.factor(perf_catch_simple$r_0)
+perf_catch_simple$r_s <- as.factor(perf_catch_simple$r_s)
+
+perf_catch_simple <- perfect_df %>% 
+  mutate(initial_r = ifelse(r_0 <= .3, "slow-growing", ifelse(r_0 >.3 & r_0 <= .5, "medium-growing", "fast-growing"))) %>% 
+  mutate(climate_severity = ifelse(r_s <= -.009, "severe_negative", ifelse(r_s >-.009 & r_s <= -.0001, "mild_negative", "positive"))) %>% 
+  filter(year <= 25)
+
+# going to remove the positive r-slopes
+
+catch_summary <- perf_catch_simple %>% 
+  group_by(id, r_0, r_s, climate_severity, initial_r) %>% 
+  summarise(total_catch = sum(c)) %>% 
+  filter(climate_severity != "positive")
+
+
+catch_summary$r_0 <- as.factor(catch_summary$r_0)
+catch_summary$r_s <- as.factor(catch_summary$r_s)
+
+
+catch_box_plot <- ggplot(catch_summary, aes(x = r_0, y = total_catch)) +
+  geom_boxplot(fill="#B8CE55", color="black") + 
+  facet_grid(climate_severity ~ initial_r, scales = 'free_x') +
+  theme_bw() +
+   theme(strip.background = element_rect(colour="black", fill="white", 
+                                       size=1))
+  
+
+catch_box_plot
+
+
+
+```
+
+
+
+
