@@ -173,19 +173,21 @@ perf_catch_simple <- perfect_df %>%
   mutate(climate_severity = ifelse(r_s <= -.009, "severe_negative", ifelse(r_s >-.009 & r_s <= -.0001, "mild_negative", "positive"))) %>% 
   filter(year <= 25)
 
-# going to remove the positive r-slopes
+
 
 catch_summary <- perf_catch_simple %>% 
   group_by(id, r_0, r_s, climate_severity, initial_r) %>% 
-  summarise(total_catch = sum(c)) %>% 
-  filter(climate_severity != "positive")
+  summarise(total_catch = sum(c)) 
 
 
 catch_summary$r_0 <- as.factor(catch_summary$r_0)
 catch_summary$r_s <- as.factor(catch_summary$r_s)
 
+# going to remove the positive r-slopes
+neg_catch_summary <- catch_summary %>% 
+  filter(climate_severity != "positive")
 
-catch_box_plot <- ggplot(catch_summary, aes(x = r_0, y = total_catch)) +
+catch_box_plot <- ggplot(neg_catch_summary, aes(x = r_0, y = total_catch)) +
   geom_boxplot(fill="#B8CE55", color="black") + 
   facet_grid(climate_severity ~ initial_r, scales = 'free_x') +
   theme_bw() +
@@ -199,6 +201,43 @@ catch_box_plot
 
 ```
 
+Ok that's hopefully somewhat helpful as a way to compare other simulations against. 
+Here's a data frame with the mean, min, max, and sd of total catch grouped by r_0 and climate severity
+```{r}
+
+catch_summary_means <- catch_summary %>% 
+  group_by(r_0, climate_severity) %>% 
+  summarise(catch_mean = mean(total_catch), min = min(total_catch), max = max(total_catch), sd = sd(total_catch))
+
+
+```
+
+And a graph, just for fun....
+
+```{r}
+
+
+catch_summary_plot <- ggplot(catch_summary_means, aes(x = r_0, y = catch_mean)) +
+  geom_point(aes(color = climate_severity))
+
+catch_summary_plot
+
+
+
+```
+
+
+Just for fun... a multiple linear regression.... using the catch_summary df
+
+```{r}
+
+total_catch_fit <- lm(total_catch ~ r_0 + climate_severity, data = catch_summary)
+
+summary(total_catch_fit)
+
+#this is probably how we'd do the shiny app model... bucket the climate severity and have them choose an r value. 
+
+```
 
 
 
