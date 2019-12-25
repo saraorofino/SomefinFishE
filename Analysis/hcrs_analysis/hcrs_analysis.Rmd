@@ -18,7 +18,8 @@ hcr_rep5c <- read_csv(file=file.path(here(),"/Results/hcrs/hcrs_constantfmsy_5re
 hcr_rep5u <- read_csv(file=file.path(here(),"/Results/hcrs/hcrs_updatingfmsy_5rep.csv"))
 hcr_rep10c <- read_csv(file=file.path(here(),"/Results/hcrs/hcrs_constantfmsy_10rep.csv"))
 hcr_rep10u <- read_csv(file=file.path(here(),"/Results/hcrs/hcrs_updatingfmsy_10rep.csv"))
-
+#data for analysis
+perfect_man <- read_csv(file = file.path(here(), "/Tests/perfect_management/csv_results/perfect.csv"))
 ```
 
 ##Data Wrangling
@@ -77,8 +78,163 @@ counts_rep10u <- hcr_rep10u %>%
   mutate(total_years = years_active + years_closed)
 ```
 
-##Graph
-```{r}
+##Gracie Graphing attempt
+```{r Gracie graphing}
+
+#Gracie giving this go, going to focus on the constant fmsy for now. 
+#hcr_rep5c
+#hcr_rep10c
+
+
+#first wrangling it so it's in the same format as the perfect catch for easier comparison. Looking at total catch as opposed to years the fishery is open here. 
+
+
+hcr_r5c_catch <- hcr_rep5c %>% 
+  mutate(initial_r = ifelse(r_0 <= .3, "slow-growing", ifelse(r_0 >.3 & r_0 <= .5, "medium-growing", "fast-growing"))) %>% 
+  mutate(climate_severity = ifelse(r_s <= -.009, "severe_negative", ifelse(r_s >-.009 & r_s <= -.0001, "mild_negative", "positive"))) %>% 
+  filter(climate_severity != "positive") # makes it easier to see where problem are for now
+
+
+hcr_r5c_catch$hcr <- as.factor(hcr_r5c_catch$hcr)
+hcr_r5c_catch$r_0 <- as.factor(hcr_r5c_catch$r_0)
+
+#initial just to see what's happening with the non-grouped data 
+hcr_r5c_catch_plot <- ggplot(hcr_r5c_catch, aes(x = year, y = c, group = id)) +
+  geom_line(aes(color = hcr, alpha = hcr)) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "HCR") +
+  labs(title = "HCR r5c Catch", y = "Catch", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")) +
+  facet_grid(initial_r~climate_severity)
+
+hcr_r5c_catch_plot
+
+#ok now grouping by ID, and trying a boxplot
+
+hcr_r5c_groups <- hcr_r5c_catch %>% 
+  group_by(id, r_0, climate_severity, initial_r, hcr) %>% 
+  summarise(total_catch = sum(c))
+
+
+hcr_r5c_groups$r_0 <- as.factor(hcr_r5c_groups$r_0)
+
+hcr_r5c_catch_box_plot <- ggplot(hcr_r5c_groups, aes(x = r_0, y = total_catch)) +
+  geom_boxplot(fill="#B8CE55", color="black") + 
+  facet_grid(climate_severity ~ initial_r, scales = 'free_x') +
+  theme_bw() +
+   theme(strip.background = element_rect(colour="black", fill="white", 
+                                       size=1))
+  
+hcr_r5c_catch_box_plot
+
+
+#ok this is pretty interesting but now need to add the HCRs in too. Maybe i split the x axis by HCRS instead....
+
+
+hcr_r5c_catch_box_plot <- ggplot(hcr_r5c_groups, aes(x = hcr, y = total_catch)) +
+  geom_boxplot(fill="#B8CE55", color="black") + 
+  facet_grid(climate_severity ~ initial_r, scales = 'free_x') +
+  theme_bw() +
+   theme(strip.background = element_rect(colour="black", fill="white", 
+                                       size=1))
+  
+hcr_r5c_catch_box_plot
 
 ```
+
+
+###perfect management
+```{r perfect management}
+#making sure the perfect means dataframe is available here
+
+perfect_df <- perfect_man %>% 
+  group_by(id) 
+
+perf_catch_simple <- perfect_df %>% 
+  mutate(initial_r = ifelse(r_0 <= .3, "slow-growing", ifelse(r_0 >.3 & r_0 <= .5, "medium-growing", "fast-growing"))) %>% 
+  mutate(climate_severity = ifelse(r_s <= -.009, "severe_negative", ifelse(r_s >-.009 & r_s <= -.0001, "mild_negative", "positive"))) %>% 
+  filter(year <= 25)
+  
+perf_catch_simple$r_0 <- as.factor(perf_catch_simple$r_0)
+perf_catch_simple$r_s <- as.factor(perf_catch_simple$r_s)
+
+
+perf_catch_summary <- perf_catch_simple %>% 
+  group_by(id, r_0, r_s, climate_severity, initial_r) %>% 
+  summarise(total_catch = sum(c)) 
+
+perf_catch_summary$r_0 <- as.factor(catch_summary$r_0)
+perf_catch_summary$r_s <- as.factor(catch_summary$r_s)
+
+#Catch means boxplot, not inclusing postive climate effects
+neg_catch_summary <- perf_catch_summary %>% 
+  filter(climate_severity != "positive")
+
+perfectman_catch_box_plot <- ggplot(neg_catch_summary, aes(x = r_0, y = total_catch)) +
+  geom_boxplot(fill="#B8CE55", color="black") + 
+  facet_grid(climate_severity ~ initial_r, scales = 'free_x') +
+  theme_bw() +
+   theme(strip.background = element_rect(colour="black", fill="white", size=1))
+
+perfectman_catch_box_plot
+
+#grouping further
+catch_summary_means <- catch_summary %>% 
+  group_by(r_0, climate_severity, initial_r) %>% 
+  summarise(catch_mean = mean(total_catch), min = min(total_catch), max = max(total_catch), sd = sd(total_catch))%>% 
+  filter(climate_severity != "positive")
+
+
+```
+
+Can I graph both boxplots on the same graph???
+
+```{r boxplot experiment}
+
+#ok so this initially looks incorrect because it's a sum of total catch, and there are way more runs in the HCR one. Gotta go with means of groups. 
+
+
+r5c_summary_means <- hcr_r5c_groups %>% 
+  group_by(r_0, climate_severity, hcr, initial_r) %>% 
+  summarise(catch_mean = mean(total_catch), min = min(total_catch), max = max(total_catch), sd = sd(total_catch))
+
+perf_r5c_box <- ggplot(catch_summary_means, aes(x = r_0, y = catch_mean)) +
+  geom_boxplot(fill="#B8CE55", color="black") +
+  geom_boxplot(data = r5c_summary_means, fill = "#079EDF", color="black") +
+  facet_grid(climate_severity ~ initial_r, scales = 'free_x') +
+  theme_bw() +
+   theme(strip.background = element_rect(colour="black", fill="white", size=1))
+  
+perf_r5c_box
+
+#update this is not useful. 
+
+```
+ That didn't really work/looks inaccurate somehow. 
+ 
+ Back to the basics with a scatterplot... 
+ 
+ 
+```{r}
+
+#tried to superimpose these together... 
+
+hcr_r5c_scatter <- ggplot(hcr_r5c_groups, aes(y = total_catch, x = hcr)) +
+  geom_point(aes(color = r_0), alpha = .75) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE)
+
+hcr_r5c_scatter
+
+
+hcr_r5c_proplim <- ggplot(counts_rep5c, aes(x = hcr, y = prop_over_limit)) +
+  geom_smooth(color = "red") 
+
+hcr_r5c_proplim
+
+```
+ 
+
+
+
 
