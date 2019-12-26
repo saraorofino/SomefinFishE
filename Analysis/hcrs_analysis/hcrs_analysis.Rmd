@@ -78,7 +78,23 @@ counts_rep10u <- hcr_rep10u %>%
   mutate(total_years = years_active + years_closed)
 ```
 
-##Gracie Graphing attempt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##Gracie Graphing attempt - focusing on constant fmsy, and very experimental. Mostly just trying to figure out what might be interesting. 
 ```{r Gracie graphing}
 
 #Gracie giving this go, going to focus on the constant fmsy for now. 
@@ -88,7 +104,7 @@ counts_rep10u <- hcr_rep10u %>%
 
 #first wrangling it so it's in the same format as the perfect catch for easier comparison. Looking at total catch as opposed to years the fishery is open here. 
 
-
+#r5c
 hcr_r5c_catch <- hcr_rep5c %>% 
   mutate(initial_r = ifelse(r_0 <= .3, "slow-growing", ifelse(r_0 >.3 & r_0 <= .5, "medium-growing", "fast-growing"))) %>% 
   mutate(climate_severity = ifelse(r_s <= -.009, "severe_negative", ifelse(r_s >-.009 & r_s <= -.0001, "mild_negative", "positive"))) %>% 
@@ -98,7 +114,20 @@ hcr_r5c_catch <- hcr_rep5c %>%
 hcr_r5c_catch$hcr <- as.factor(hcr_r5c_catch$hcr)
 hcr_r5c_catch$r_0 <- as.factor(hcr_r5c_catch$r_0)
 
+#r10c
+
+hcr_r10c_catch <- hcr_rep10c %>% 
+  mutate(initial_r = ifelse(r_0 <= .3, "slow-growing", ifelse(r_0 >.3 & r_0 <= .5, "medium-growing", "fast-growing"))) %>% 
+  mutate(climate_severity = ifelse(r_s <= -.009, "severe_negative", ifelse(r_s >-.009 & r_s <= -.0001, "mild_negative", "positive"))) %>% 
+  filter(climate_severity != "positive") # makes it easier to see where problems are for now
+
+
+hcr_r10c_catch$hcr <- as.factor(hcr_r10c_catch$hcr)
+hcr_r10c_catch$r_0 <- as.factor(hcr_r10c_catch$r_0)
+
+
 #initial just to see what's happening with the non-grouped data 
+#r5
 hcr_r5c_catch_plot <- ggplot(hcr_r5c_catch, aes(x = year, y = c, group = id)) +
   geom_line(aes(color = hcr, alpha = hcr)) +
   theme_bw() +
@@ -109,8 +138,20 @@ hcr_r5c_catch_plot <- ggplot(hcr_r5c_catch, aes(x = year, y = c, group = id)) +
 
 hcr_r5c_catch_plot
 
+#r10
+hcr_r10c_catch_plot <- ggplot(hcr_r10c_catch, aes(x = year, y = c, group = id)) +
+  geom_line(aes(color = hcr, alpha = hcr)) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "HCR") +
+  labs(title = "HCR r10c Catch", y = "Catch", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")) +
+  facet_grid(initial_r~climate_severity)
+
+hcr_r10c_catch_plot
+
 #ok now grouping by ID, and trying a boxplot
 
+#r5
 hcr_r5c_groups <- hcr_r5c_catch %>% 
   group_by(id, r_0, climate_severity, initial_r, hcr) %>% 
   summarise(total_catch = sum(c))
@@ -122,23 +163,124 @@ hcr_r5c_catch_box_plot <- ggplot(hcr_r5c_groups, aes(x = r_0, y = total_catch)) 
   geom_boxplot(fill="#B8CE55", color="black") + 
   facet_grid(climate_severity ~ initial_r, scales = 'free_x') +
   theme_bw() +
+  labs(title = "r5c Catch") +
    theme(strip.background = element_rect(colour="black", fill="white", 
                                        size=1))
   
 hcr_r5c_catch_box_plot
 
+#r10
+
+hcr_r10c_groups <- hcr_r10c_catch %>% 
+  group_by(id, r_0, climate_severity, initial_r, hcr) %>% 
+  summarise(total_catch = sum(c))
+
+
+hcr_r10c_groups$r_0 <- as.factor(hcr_r10c_groups$r_0)
+
+hcr_r10c_catch_box_plot <- ggplot(hcr_r10c_groups, aes(x = r_0, y = total_catch)) +
+  geom_boxplot(fill="#B8CE55", color="black") + 
+  facet_grid(climate_severity ~ initial_r, scales = 'free_x') +
+  theme_bw() +
+  labs(title = "r10c Catch") +
+   theme(strip.background = element_rect(colour="black", fill="white", 
+                                       size=1))
+  
+hcr_r10c_catch_box_plot
+
 
 #ok this is pretty interesting but now need to add the HCRs in too. Maybe i split the x axis by HCRS instead....
 
+#r5c
 
 hcr_r5c_catch_box_plot <- ggplot(hcr_r5c_groups, aes(x = hcr, y = total_catch)) +
   geom_boxplot(fill="#B8CE55", color="black") + 
   facet_grid(climate_severity ~ initial_r, scales = 'free_x') +
   theme_bw() +
+  labs(title = "r5c Catch by HCR") +
    theme(strip.background = element_rect(colour="black", fill="white", 
                                        size=1))
   
 hcr_r5c_catch_box_plot
+
+#r10c
+hcr_r10c_catch_box_plot <- ggplot(hcr_r10c_groups, aes(x = hcr, y = total_catch)) +
+  geom_boxplot(fill="#B8CE55", color="black") + 
+  facet_grid(climate_severity ~ initial_r, scales = 'free_x') +
+  theme_bw() +
+  labs(title = "r10c Catch by HCR") +
+   theme(strip.background = element_rect(colour="black", fill="white", 
+                                       size=1))
+  
+hcr_r10c_catch_box_plot
+
+#grouping further...
+
+#r5c
+hcr_r5c_groups <- hcr_r5c_catch %>% 
+  group_by(id, r_0, climate_severity, initial_r, hcr) %>% 
+  summarise(total_catch = sum(c))
+
+hcr_r5c_means <- hcr_r5c_groups %>% 
+  group_by(climate_severity, initial_r, hcr) %>% 
+  summarise(catch_mean = mean(total_catch), min = min(total_catch), max = max(total_catch), sd = sd(total_catch))
+
+#r10c
+hcr_r10c_groups <- hcr_r10c_catch %>% 
+  group_by(id, r_0, climate_severity, initial_r, hcr) %>% 
+  summarise(total_catch = sum(c))
+
+hcr_r10c_means <- hcr_r10c_groups %>% 
+  group_by(climate_severity, initial_r, hcr) %>% 
+  summarise(catch_mean = mean(total_catch), min = min(total_catch), max = max(total_catch), sd = sd(total_catch))
+
+
+#and another facet grid... 
+
+hcr_r5c_means$hcr <- as.numeric(hcr_r5c_means$hcr)
+
+hcr_r5c_means_plot <- ggplot(hcr_r5c_means, aes(x = hcr, y = catch_mean)) +
+  geom_line(color="#B8CE55", size = 2) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "HCR") +
+  labs(title = "HCR r5c", y = "Catch", x = "HCR") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")) +
+  facet_grid(initial_r~climate_severity)
+
+hcr_r5c_means_plot
+
+#ok this is actually fairly interesting and I want to add r10 and r20 etc. to the same graph. What is most interesting is the dip in mild climate and fast growing species between a 5-10% reduction. Otherwise, there doesn't seem to be a huge difference between HCRs. Maybe that's because it's getting repeated every 5 years. I bet there are more differences when repeated less frequently... 
+
+#r10c
+hcr_r10c_means$hcr <- as.numeric(hcr_r10c_means$hcr)
+
+hcr_r10c_means_plot <- ggplot(hcr_r10c_means, aes(x = hcr, y = catch_mean)) +
+  geom_line(color="#B8CE55", size = 1.5) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "HCR") +
+  labs(title = "HCR r10c", y = "Catch", x = "HCR") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")) +
+  facet_grid(initial_r~climate_severity)
+
+hcr_r10c_means_plot
+
+
+#so let's add r10 to the same plot?
+#I did scales = free for now so it's easier to see the difference between r5 and r10, but its not ideal for comparing between r's
+
+hcr_r10_5c_means_plot <- ggplot(hcr_r10c_means, aes(x = hcr, y = catch_mean)) +
+  geom_line(data = hcr_r10c_means, aes(x = hcr, y = catch_mean), color="#B8CE55") +
+  geom_line(data = hcr_r5c_means, aes(x = hcr, y = catch_mean), color = "#079EDF") +
+  scale_color_viridis(discrete = TRUE, name = "HCR") +
+  labs(title = "HCR r10c + r5c", y = "Catch", x = "HCR") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")) +
+  facet_grid(initial_r~climate_severity, scales = "free_y") +
+  theme_bw()
+
+hcr_r10_5c_means_plot
+##note that r10 is green and r5 is blue 
+#sort of weird, r5's catch is lower usually. Does that make sense? 
+#x-axis is wrong? 
 
 ```
 
@@ -185,6 +327,9 @@ catch_summary_means <- catch_summary %>%
   filter(climate_severity != "positive")
 
 
+
+
+
 ```
 
 Can I graph both boxplots on the same graph???
@@ -209,15 +354,102 @@ perf_r5c_box
 
 #update this is not useful. 
 
-```
- That didn't really work/looks inaccurate somehow. 
- 
- Back to the basics with a scatterplot... 
- 
- 
-```{r}
+#back to time series plots...
 
-#tried to superimpose these together... 
+
+
+hcr_r5c_catch$r_0 <- as.factor(hcr_r5c_catch$r_0)
+
+hcr.95_r5c_catch <- hcr_r5c_catch %>% 
+  filter(hcr == "0.95")
+
+hcr.95_r5c_catch_plot <- ggplot(hcr.95_r5c_catch, aes(x = year, y = c, group = id)) +
+  geom_line(aes(color = r_0)) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "R_0") +
+  labs(title = "HCR .95 r5c catch", y = "catch", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")) +
+  facet_wrap(~climate_severity)
+
+hcr.95_r5c_catch_plot
+
+#ok yep this is what we want. Let's do it for the first few HCRS and see if things change...
+
+
+hcr.90_r5c_catch <- hcr_r5c_catch %>% 
+  filter(hcr == "0.9")
+
+hcr.90_r5c_catch_plot <- ggplot(hcr.90_r5c_catch, aes(x = year, y = c, group = id)) +
+  geom_line(aes(color = r_0)) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "R_0") +
+  labs(title = "HCR .90 r5c catch", y = "catch", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")) +
+  facet_wrap(~climate_severity) 
+
+hcr.90_r5c_catch_plot
+
+
+
+hcr.85_r5c_catch <- hcr_r5c_catch %>% 
+  filter(hcr == "0.85")
+
+hcr.85_r5c_catch_plot <- ggplot(hcr.85_r5c_catch, aes(x = year, y = c, group = id)) +
+  geom_line(aes(color = r_0)) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "R_0") +
+  labs(title = "HCR .85 r5c catch", y = "catch", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")) +
+  facet_wrap(~climate_severity) 
+
+hcr.85_r5c_catch_plot
+
+
+
+hcr.75_r5c_catch <- hcr_r5c_catch %>% 
+  filter(hcr == "0.75")
+
+hcr.75_r5c_catch_plot <- ggplot(hcr.75_r5c_catch, aes(x = year, y = c, group = id)) +
+  geom_line(aes(color = r_0)) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "R_0") +
+  labs(title = "HCR .75 r5c catch", y = "catch", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")) +
+  facet_wrap(~climate_severity) 
+
+hcr.75_r5c_catch_plot
+
+
+
+hcr.50_r5c_catch <- hcr_r5c_catch %>% 
+  filter(hcr == "0.5")
+
+hcr.50_r5c_catch_plot <- ggplot(hcr.50_r5c_catch, aes(x = year, y = c, group = id)) +
+  geom_line(aes(color = r_0)) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "R_0") +
+  labs(title = "HCR .50 r5c catch", y = "catch", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")) +
+  facet_wrap(~climate_severity) 
+
+hcr.50_r5c_catch_plot
+
+
+
+
+
+
+
+
+```
+  
+ 
+ 
+ 
+ 
+```{r line plot of prop_over_limit}
+
+#tried to superimpose these together... didn't really work since r hates letting you do 2 scales per graph 
 
 hcr_r5c_scatter <- ggplot(hcr_r5c_groups, aes(y = total_catch, x = hcr)) +
   geom_point(aes(color = r_0), alpha = .75) +
@@ -226,14 +458,137 @@ hcr_r5c_scatter <- ggplot(hcr_r5c_groups, aes(y = total_catch, x = hcr)) +
 
 hcr_r5c_scatter
 
-
 hcr_r5c_proplim <- ggplot(counts_rep5c, aes(x = hcr, y = prop_over_limit)) +
-  geom_smooth(color = "red") 
+  geom_smooth(color = "#079EDF") +
+  theme_bw()
 
 hcr_r5c_proplim
 
+#well that's fine but not very interesting. 
+
+
 ```
  
+###Maybe time to look at biomass instead of catch. 
+
+```{r biomass plots}
+#r5c
+
+hcr_r5c_biomass <- hcr_rep5c %>% 
+  mutate(initial_r = ifelse(r_0 <= .3, "slow-growing", ifelse(r_0 >.3 & r_0 <= .5, "medium-growing", "fast-growing"))) %>% 
+  mutate(climate_severity = ifelse(r_s <= -.009, "severe_negative", ifelse(r_s >-.009 & r_s <= -.0001, "mild_negative", "positive"))) %>% 
+  filter(climate_severity != "positive") # makes it easier to see where problems are for now
+
+
+hcr_r5c_biomass$hcr <- as.factor(hcr_r5c_biomass$hcr)
+
+hcr_r5c_biomass_plot <- ggplot(hcr_r5c_biomass, aes(x = year, y = b, group = id)) +
+  geom_line(aes(color = hcr, alpha = hcr)) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "HCR") +
+  labs(title = "HCR r5c biomass", y = "biomass", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")) +
+  facet_grid(initial_r~climate_severity)
+
+hcr_r5c_biomass_plot
+
+
+#hmm ok so the runs that go to 1000 are the ones that initally went over the limit, closed, and then were not fished again. 
+
+#I think I want to split them up by HCR and then color code by growth rate... can I facet wrap a facet grid???? No, no you cannot. 
+
+
+hcr_r5c_biomass$r_0 <- as.factor(hcr_r5c_biomass$r_0)
+
+hcr.95_r5c_biomass <- hcr_r5c_biomass %>% 
+  filter(hcr == "0.95")
+
+hcr.95_r5c_biomass_plot <- ggplot(hcr.95_r5c_biomass, aes(x = year, y = b, group = id)) +
+  geom_line(aes(color = r_0)) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "R_0") +
+  labs(title = "HCR .95 r5c biomass", y = "biomass", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")) +
+  facet_wrap(~climate_severity)
+
+hcr.95_r5c_biomass_plot
+
+#ok yep this is what we want. Let's do it for the first few HCRS and see if things change...
+
+
+hcr.90_r5c_biomass <- hcr_r5c_biomass %>% 
+  filter(hcr == "0.9")
+
+hcr.90_r5c_biomass_plot <- ggplot(hcr.90_r5c_biomass, aes(x = year, y = b, group = id)) +
+  geom_line(aes(color = r_0)) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "R_0") +
+  labs(title = "HCR .90 r5c biomass", y = "biomass", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")) +
+  facet_wrap(~climate_severity) 
+
+hcr.90_r5c_biomass_plot
+
+
+
+hcr.85_r5c_biomass <- hcr_r5c_biomass %>% 
+  filter(hcr == "0.85")
+
+hcr.85_r5c_biomass_plot <- ggplot(hcr.85_r5c_biomass, aes(x = year, y = b, group = id)) +
+  geom_line(aes(color = r_0)) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "R_0") +
+  labs(title = "HCR .85 r5c biomass", y = "biomass", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")) +
+  facet_wrap(~climate_severity) 
+
+hcr.85_r5c_biomass_plot
+
+
+
+hcr.75_r5c_biomass <- hcr_r5c_biomass %>% 
+  filter(hcr == "0.75")
+
+hcr.75_r5c_biomass_plot <- ggplot(hcr.75_r5c_biomass, aes(x = year, y = b, group = id)) +
+  geom_line(aes(color = r_0)) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "R_0") +
+  labs(title = "HCR .75 r5c biomass", y = "biomass", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")) +
+  facet_wrap(~climate_severity) 
+
+hcr.75_r5c_biomass_plot
+
+
+
+hcr.50_r5c_biomass <- hcr_r5c_biomass %>% 
+  filter(hcr == "0.5")
+
+hcr.50_r5c_biomass_plot <- ggplot(hcr.50_r5c_biomass, aes(x = year, y = b, group = id)) +
+  geom_line(aes(color = r_0)) +
+  theme_bw() +
+  scale_color_viridis(discrete = TRUE, name = "R_0") +
+  labs(title = "HCR .50 r5c biomass", y = "biomass", x = "Year") +
+  theme(axis.text.x=element_text(size=10), plot.title = element_text(hjust = 0.5, face = "bold", size = 15), axis.title.x = element_text(face = "bold"), axis.title.y = element_text(face = "bold")) +
+  facet_wrap(~climate_severity) 
+
+hcr.50_r5c_biomass_plot
+
+#yikes ok so even with a 50% reduction HCR this are still bleak under severe climate scenarios... pretty bleak. I guess I want to know how many stock per hcr A) don't go above the limit, and B) stay above a certain threshhold of biomass so that it is considered "healthy?" Maybe do this looking at both year 50 and year 100
+
+#Out of a total of 116 runs per HCR
+
+hcr_r5c_biomass_counts <- hcr_rep5c %>% 
+  filter(year == "50") %>%
+   mutate(initial_r = ifelse(r_0 <= .3, "slow-growing", ifelse(r_0 >.3 & r_0 <= .5, "medium-growing", "fast-growing"))) %>% 
+  mutate(climate_severity = ifelse(r_s <= -.009, "severe_negative", ifelse(r_s >-.009 & r_s <= -.0001, "mild_negative", "positive"))) %>% 
+  filter(climate_severity != "positive") %>% 
+  group_by(hcr, climate_severity, initial_r) %>% 
+  tally(b <= 2000 | b>= 8000)
+
+#ok i think we can do something statistical with this. 
+
+```
 
 
 
