@@ -1,0 +1,83 @@
+---
+title: "test_shock_events"
+author: "Sara Orofino"
+date: "1/3/2020"
+output: html_document
+---
+#{.tabset}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Purpose
+
+We need to incorporate shock events into our model to represent El Nino years. Here is Steve's suggestion for how to do this:  
+
+  - Error variance around the r_s term  
+  - Every n years (randomly draw with probability 1/n) you have either a 10% or 30% decline in productivity  
+    - Start with just 10% and 30% and see how big of a difference there is between the two  
+    - Maybe start with n = 5; this is on the extreme end of what people will be experiencing   
+
+##Randomly Assign El Nino Years
+
+The r_s term defines how rapdily the productivity declines each year. Right now the r_s term varies from -0.01767 (1.7% decrease) to 0.01623 (1.6% increase) and this is the equation used to calculate the new growth rate in time (t) $r_t = r_{t-1} + (r_s*r_{t-1})$  
+
+Using Steve's suggestion if we start with n = 5, then there is a 1/5 (20%) chance that you experience an El Nino event (in any given year??). My understanding is that if its an El Nino year, r will decrease by either the 10% or 30% depending on which one we are testing. In the model I think it would look something like this:   
+  if(El Nino){  
+  r[t] = r[t-1] + (-0.10*r[t-1]) #10% decrease of whatever your r was in the previous year    
+  }  
+  if(NOT El Nino){  
+  r[t] = r[t-1] + (r_s*r[t-1]) #stays the same as before   
+  }  
+
+I'm a bit unclear on how we determine if it is an El Nino year or not. I'm assuming this is where the 20% part factors in but I'm not sure what that looks like exactly. My understanding is that this means there is a 20% chance that any given year is an El Nino year. So you could make a random variable (nino) and draw yes (1) or no (0) at random with a 20% chance of drawing yes (1). I found two different ways to do this:  
+
+  - using sample()  
+    -- sample(c(0,1), size=5, replace=TRUE, prob=c(0.8,0.2)) #This would also give 5 results of 1 or 0 with prob=0.8 for 0 and prob=0.2 for 1
+  - using rbinom()  
+    -- rbinom(5, 1,.2) #This would give me 5 results (just to test it out) of 1 or 0 where there is a prob=0.2 for getting 1
+
+I'll test them both here to see if the results make sense   
+```{r test-sample-methods}
+
+nino1 <- sample(c(0,1), size=5, replace=TRUE, prob=c(0.8,0.2))
+nino1
+#First time all 0s; second time 1-1 and 4-0s; third time 2-1s and 3-0s -- seems reasonable
+
+nino2 <- rbinom(5, 1,.2)
+nino2
+#First time 1-1 and 4-0s; second time all 0s; third time 1-1 and 4-0s -- also seems reasonable 
+```
+
+
+Let's make a quick histogram of 100 tests to double check:
+```{r sample-histograms}
+nino1_hist <- sample(c(0,1), size=100, replace=TRUE, prob=c(0.8,0.2))
+hist(nino1_hist)
+#I re-ran this several times and it always fluctuates like its supposed to around 80% 0s and 20% 1s
+
+nino2_hist <- nino2 <- rbinom(100, 1,.2)
+hist(nino2_hist)
+#Also re-ran this several times and it always makes sense with what I expect
+```
+
+So I think that all together it should look vaguely something like this. This is only for one year and I'm just assigning the previous value of r for simplicity.     
+```{r basic}
+#For simplicity assign a value of r_t-1 and call it r_prior; assign the value of r_s; assign the value of the r decrease during el nino years
+r_prior = 0.2
+r_s = -0.01767
+r_nino = -0.10 
+
+#Determine if it is an El Nino year: 1 = yes and 0 = no (assume 1/5 years is an El Nino year)
+nino <- rbinom(1, 1,.2) #Draw one number with a 20% chance of drawing 1 and 80% of drawing 0
+
+if(nino==1){
+  r = r_prior + (r_nino*r_prior) #if el nino year use the 10% productivity decrease
+}
+if(nino==0){
+  r = r_prior + (r_s*r_prior) #if not el nino year use the normal r_s decrease
+}
+
+```
+
+From what I can tell this seems to work fine. I'm not sure how this works with the assessment years though. I think drawing the el nino part would need to happen within the loop of both the assessment years and the non-assessment years because it is independent of the assessment. Then we just need to add the if statements within each loop for how to calculate r.  
