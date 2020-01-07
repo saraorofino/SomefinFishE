@@ -1,0 +1,240 @@
+---
+title: "shock30_constant_rep10"
+output: html_document
+---
+
+#{.tabset}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(purrr)
+```
+
+##Setup/Assumptions
+
+Experiment: In this experiment we are testing the impact of shock events (El Nino years) on fisheries management. We will compare the number of times managers make the correct decision about the harvest control rule when random shock events are included. 
+
+The "assessment" period of FishE in this model is every 10 years.
+
+In this experiment, the true Fmsy is adjusting over time as climate change alters productivity. However, the management decision is based on a Fmsy that is not adjusted to climate change - it is based on the initial Fmsy that would be calculated in the year 1 assessment. 
+
+The error in the F/Fmsy ratio is .3 - this reflects Tier 2 in FISHE where the fishery has one year of data available.
+
+The harvest control rule is:
+  - f_ratio < 1 increase f by 5%
+  - f_ratio == 1 f remains the same as previous year
+  - 1 < f_ratio < 2 f decreases by 10%
+  - f_ratio > 2 fishery shuts down (f goes to 0)
+    Note: In this simulation there is no reopening of fisheries once the manager decides to shut them down
+
+Shock events:
+  - There is a 20% chance that any given year is an El Nino year (1/5 year frequency) 
+  - During an El Nino year the productivity of the fishery decreases by 30%
+
+Assumptions:
+  - Actual Fmsy is changing with climate change
+  - Fisheries represented in the model have no current management. Initial biomass in the simulation is therefore representative of the equilibrium that the fishery has reached over the years due to some level of fishing mortality (f). 
+  - Fishing mortality and f/fmsy ratios are calculated at the beginning of each year and the change in f is applied to fishing in that same year
+  - The current f at the beginning of the simulation is reached when catch is equivalent to the surplus production of the fishery at that biomass. 
+  - The f calculated at the beginning of the simulation is the true fishing mortality rate of the operating fishery. 
+  - Climate change is affecting the productivity of fish stocks by influeing the growth term (r)
+  - The f that comes out of the HCR is the actual f in the fishery moving forward (fisherman are adhering to that f)
+  
+  
+##Model
+
+Before running the model run the following code:
+```{r model-setup}
+
+#create an interval vector for times that we do want to do the assessment:
+assess_int <- seq(10,100,10)
+
+#Write a "not contained in" function"
+`%not_in%` <- purrr::negate(`%in%`)
+```
+
+ 
+```{r model}
+
+##Fmsy is updating with climate change but managers are NOT updating perceived Fmsy 
+
+sim_shock10c <- function(b, r, r_s, error, p, k, years){ 
+  
+  results <- data.frame(
+    b = rep(NA, years), c = rep(NA, years), 
+    year = 1:years, r = rep(NA, years), nino = rep(NA, years), f = rep(NA, years),
+    f_msy = rep(NA, years), f_ratio = rep(NA, years), f_ratio_p = rep(NA, years), f_ratio_err = rep(NA, years)) #Setup the results dataframe 
+  
+  #Set the initial result for the outputs in year 1
+  results$b[1] = b
+  results$r[1] = r
+  results$nino[1] = 0 #starting as not an el nino year
+  f_int = (results$r[1] / p) * (1 - ((results$b[1] / k) ^ p)) #initial f assuming catch = surplus
+  
+  
+  fmsy <-function(r,p){r * (1 / (1+p))} #set up the function to calculate Fmsy based on growth (r) and shape parameter (p)
+  r_calc1 <- results$r[1]
+  results$f_msy[1] <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1 based on historical parameters
+  results$f_ratio[1] = f_int/results$f_msy[1] #calculate the actual f_ratio from initial fishing pressure (this is basically f in time t-1) and fmsy
+  results$f_ratio_p[1] = results$f_ratio[1] #this is the perceived f ratio by the fisheries managers - with climate change, this perceived ratio will not have an adjusted fmsy as productivity changes
+
+  #Log transform the mean (m) and stdev (s):
+  mu_1 <- log(results$f_ratio_p[1]) 
+  cv <- error
+  sd_1 <- sqrt(log(cv^2+1))
+  
+  #Draw the f_ratio_err:
+  results$f_ratio_err[1] <- rlnorm(1, meanlog = mu_1, sdlog = sd_1)
+  
+  #Decide how to change f based on the f ratio estimate with error:
+  if(results$f_ratio_err[1] >= 2){
+       results$f[1] = 0 #Close the fishery
+   } 
+    if(results$f_ratio_err[1] > 1.1 & results$f_ratio_err[1] < 2){
+       results$f[1] = 0.9*f_int #Reduce by 10%
+   }  
+    if(results$f_ratio_err[1] > 1 & results$f_ratio_err[1] < 1.1){
+       results$f[1] = f_int  #f stays the same in as last year
+   }
+    if(results$f_ratio_err[1] < 1){
+       results$f[1] = 1.05*f_int #f increases by 5% from last year
+   } 
+  
+  #Calculate catch in year one based on the new f:
+  results$c[1] = results$f[1] * results$b[1] 
+
+  ## Loop the model over the specified number of years
+  for (t in 2:years) {
+    if(results$year[t] %in% assess_int){
+    
+    #Determine if it is an El Nino year:
+    results$nino[t] <-  rbinom(1, 1,.2) #assuming there's a 20% chance of an El Nino in any given year
+    #Define how much productivity will decrease in an El Nino year:
+    r_nino <- -0.30 
+    
+    #Determine r[t] based on if it is an el nino year or not:
+    if(results$nino[t]==1){
+      results$r[t] = results$r[t-1] + (r_nino*results$r[t-1]) #in el nino year decrease by the r_nino term
+    }
+    if(results$nino[t]==0){
+      results$r[t] = results$r[t-1] + (r_s*results$r[t-1]) #not an el nino year r calculation stays the same
+    }    
+    
+    ##HCR decision will change how f is calculated - this step must come before calculating c 
+    # Calculate fmsy in time t from current r 
+    r_calc2 <- results$r[t]
+    results$f_msy[t] <- fmsy(r=r_calc2, p=p)
+    results$f_ratio[t] <- results$f[t-1]/results$f_msy[t-1] #the ratio of f/fmsy at the beginning of the year is based on last years f and fmsy
+    results$f_ratio_p[t] <- results$f[t-1]/results$f_msy[1] #the perceived f ratio is based on the original fmsy calculation
+
+    #Transform to new mean (mu) if the perceived f_ratio is greater than 0:
+    if(results$f_ratio_p[t] != 0){
+       mu_2 <- log(results$f_ratio_p[t])
+       #Draw the f_ratio_err
+       results$f_ratio_err[t] <- rlnorm(1, meanlog = mu_2, sdlog = sd_1)
+    }
+    if(results$f_ratio_p[t] == 0){
+       results$f_ratio_err[t] = 0
+    }
+    
+    #Decisions for f this year based on the ratio with error in the previous year 
+    if(results$f_ratio_err[t] >= 2){
+       results$f[t] = 0 
+   } 
+    if(results$f_ratio_err[t] > 1.1 & results$f_ratio_err[t] < 2){
+       results$f[t] = 0.9*results$f[t-1] #Reduce by 10%
+   }  
+    if(results$f_ratio_err[t] > 1 & results$f_ratio_err[t] < 1.1){
+       results$f[t] = results$f[t-1]  #f stays the same in as last year
+   }
+    if(results$f_ratio_err[t] < 1){
+       results$f[t] = 1.05*results$f[t-1] #f increases by 5% from last year
+   } 
+    
+    
+    #Calculate remaining results - pay attention to the order!
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    results$c[t] = results$f[t] * results$b[t]
+   } 
+
+  if(results$year[t] %not_in% assess_int){
+
+    #Determine if it is an El Nino year:
+    results$nino[t] <-  rbinom(1, 1,.2) #assuming there's a 20% chance of an El Nino in any given year
+    #Define how much productivity will decrease in an El Nino year:
+    r_nino <- -0.30 
+    
+    #Determine r[t] based on if it is an el nino year or not:
+    if(results$nino[t]==1){
+      results$r[t] = results$r[t-1] + (r_nino*results$r[t-1]) #in el nino year decrease by the r_nino term
+    }
+    if(results$nino[t]==0){
+      results$r[t] = results$r[t-1] + (r_s*results$r[t-1]) #not an el nino year r calculation stays the same
+    }   
+    
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    results$f[t] = results$f[t-1]
+    results$c[t] = results$f[t] * results$b[t]
+    r_calc3 <- results$r[t]
+    results$f_msy[t] = fmsy(r=r_calc3, p=p) #Fmsy needs to update every year to capture productivity changes
+    results$f_ratio_err[t] = results$f_ratio_err[t-1]
+    results$f_ratio[t] = results$f[t-1]/results$f_msy[t-1]
+    results$f_ratio_p[t] = results$f_ratio_p[t-1]
+    
+  }
+}
+  return(results)
+}
+
+
+```
+ 
+##Model Check
+
+Simple results check:
+```{r simple-check}
+
+check_result_shock10c <- sim_shock10c(b=6000, r=0.2, r_s=-0.01767, error=0.3, p=0.2, k=10000, years=100)
+```
+
+##Model Inputs List
+
+Create the experiment input list:
+```{r experiment-inputs}
+
+#Design experiments
+list_shock10c <- list(
+  b = c(1500, 4000, 6000),
+  r = seq(0.1, .8, .1),
+  r_s = seq(-0.01767, 0.01623, 0.002),
+  error = 0.3,
+  p = 0.2,
+  k = 10000,
+  years = 100
+)
+
+input_shock10c <- list_shock10c %>%
+  cross()
+
+
+```
+
+
+##Run
+
+Run the model:
+```{r run}
+
+results = list()
+
+#Run the model over the input lists:
+
+for(i in 1:408){
+  results[[i]] <- sim_shock10c(b=input_shock10c[[i]]$b, r=input_shock10c[[i]]$r,
+                             r_s=input_shock10c[[i]]$r_s, p=input_shock10c[[i]]$p,
+                             k=input_shock10c[[i]]$k, years=input_shock10c[[i]]$years, 
+                             error = input_shock10c[[i]]$error)
+}
+
+```
+
