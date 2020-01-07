@@ -1,0 +1,313 @@
+---
+title: "perfect_updating_rep5"
+output: html_document
+---
+
+#{.tabset}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(purrr)
+```
+
+
+##Setup/Assumptions
+
+In this experiment we are simulating perfect management under the FISHE process. In the case of looking at error this means that the managers would always make the correct decision on the harvest control rule.
+
+The true Fmsy is adjusting over time as climate change alters productivity and during assessment years the managers are updating their estimates of Fmsy to reflect productivity changes. 
+
+There are three errors being simulated representing the different tiers of data
+  - Tier 1: Less than one year of data; high uncertainty --> error = 0.5
+  - Tier 2: One year of data; intermediate uncertainty --> error = 0.3
+  - Tier 3: More than one year of data; lower uncertainty --> error = 0.1
+
+The "assessment" period of FishE in this model is every 5 years.
+
+The harvest control rule is:
+  - f_ratio < 1 increase f by 5%
+  - f_ratio == 1 f remains the same as previous year
+  - 1 < f_ratio < 2 f decreases by 10%
+  - f_ratio > 2 fishery shuts down (f goes to 0)
+    Note: In this simulation there is no reopening of fisheries once the manager decides to shut them down
+
+The three levels of error (0.1, 0.3 and 0.5) will be tested over a range of climate impacts, initial growth rates, and initial biomasses.
+
+Assumptions:
+  - Perfect management under FISHE would be always making the correct decision (the decision f_ratio would have you make) despite error in your assessment methods
+  - Fisheries represented in the model have no current management. Initial biomass in the simulation is therefore representative of the equilibrium that the fishery has reached over the years due to some level of fishing mortality (f). 
+  - Fishing mortality and f/fmsy ratios are calculated at the beginning of each year and the change in f is applied to fishing in that same year
+  - The current f at the beginning of the simulation is reached when catch is equivalent to the surplus production of the fishery at that biomass. 
+  - The f calculated at the beginning of the simulation is the true fishing mortality rate of the operating fishery. 
+  - Climate change is affecting the productivity of fish stocks by influeing the growth term (r)
+  - The f that comes out of the HCR is the actual f in the fishery moving forward (fisherman are adhering to that f)
+
+Goal: Simulate the effect of error around the detailed assessment in the face of climate change.
+
+
+##Model
+
+Before running the model run the following code:
+```{r model-setup}
+
+#create an interval vector for times that we do want to do the assessment:
+assess_int <- seq(5,100,5)
+
+#Write a "not contained in" function"
+`%not_in%` <- purrr::negate(`%in%`)
+```
+
+
+```{r model}
+##Fmsy is updating with climate change and managers are updating perceived Fmsy during assessment years
+
+sim_5u_perf <- function(b, r, r_s, p, k, years){
+  
+  results <- data.frame(
+    b = rep(NA, years), c = rep(NA, years), 
+    year = 1:years, r = rep(NA, years), f = rep(NA, years),
+    f_msy = rep(NA, years), f_ratio = rep(NA, years)) #Setup the results dataframe 
+  
+  #Set the initial result for the outputs in year 1
+  results$b[1] = b
+  results$r[1] = r
+  f_int = (results$r[1] / p) * (1 - ((results$b[1] / k) ^ p)) #initial f assuming catch = surplus
+  
+  
+  fmsy <-function(r,p){r * (1 / (1+p))} #set up the function to calculate Fmsy based on growth (r) and shape parameter (p)
+  r_calc1 <- results$r[1]
+  results$f_msy[1] <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1 based on historical parameters
+  results$f_ratio[1] = f_int/results$f_msy[1] #calculate the actual f_ratio from initial fishing pressure (this is basically f in time t-1) and fmsy
+
+  
+  #Decide how to change f based on the f ratio:
+  if(results$f_ratio[1] >= 2){
+       results$f[1] = 0 #Close the fishery
+   } 
+    if(results$f_ratio[1] > 1.1 & results$f_ratio[1] < 2){
+       results$f[1] = 0.9*f_int #Reduce by 10% - same thing as keeping 90% of previous fishing mortality
+   }  
+    if(results$f_ratio[1] > 1 & results$f_ratio[1] < 1.1){
+       results$f[1] = f_int  #f stays the same in as last year
+   }
+    if(results$f_ratio[1] < 1){
+       results$f[1] = 1.05*f_int #f increases by 5% from last year
+   } 
+  
+  #Calculate catch in year one based on the new f:
+  results$c[1] = results$f[1] * results$b[1] 
+  
+  ## Loop the model over the specified number of years
+  for (t in 2:years) {
+    if(results$year[t] %in% assess_int){
+    
+    results$r[t] = results$r[t-1] + (r_s*results$r[t-1]) 
+    
+    ##HCR decision will change how f is calculated - this step must come before calculating c 
+    # Calculate fmsy in time t from current r 
+    r_calc2 <- results$r[t]
+    results$f_msy[t] <- fmsy(r=r_calc2, p=p)
+    results$f_ratio[t] <- results$f[t-1]/results$f_msy[t-1] #the ratio of f/fmsy at the beginning of the year is based on last years f and fmsy
+    
+    #Decisions for f this year based on the ratio in the previous year 
+    if(results$f_ratio[t] >= 2){
+       results$f[t] = 0 
+   } 
+    if(results$f_ratio[t] > 1.1 & results$f_ratio[t] < 2){
+       results$f[t] = 0.9*results$f[t-1] #Reduce by 10% - same thing as keeping 90% of previous fishing mortality
+   }  
+    if(results$f_ratio[t] > 1 & results$f_ratio[t] < 1.1){
+       results$f[t] = results$f[t-1]  #f stays the same in as last year
+   }
+    if(results$f_ratio[t] < 1){
+       results$f[t] = 1.05*results$f[t-1] #f increases by 5% from last year
+   } 
+
+    
+    #Calculate remaining results - pay attention to the order!
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    results$c[t] = results$f[t] * results$b[t]
+   } 
+
+  if(results$year[t] %not_in% assess_int){
+    results$r[t] = results$r[t-1] + (r_s*results$r[t-1])
+    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    results$f[t] = results$f[t-1]
+    results$c[t] = results$f[t] * results$b[t]
+    r_calc3 <- results$r[t]
+    results$f_msy[t] <- fmsy(r=r_calc3, p=p)
+    results$f_ratio[t] = results$f_ratio[t-1]
+    
+  }
+}
+  return(results)
+}
+
+
+```
+
+
+##Model Check
+
+Simple results check:
+```{r simple-check}
+
+check_result_5u_perf <- sim_5u_perf(b=6000, r=0.2, r_s=-0.01767, p=0.2, k=10000, years=100)
+```
+
+##Model Inputs List
+
+Create the experiment input list:
+```{r experiment-inputs}
+
+#Design experiments
+list_5u_perf <- list(
+  b = c(1500, 4000, 6000),
+  r = seq(0.1, .8, .1),
+  r_s = seq(-0.01767, 0.01623, 0.002), 
+  p = 0.2,
+  k = 10000,
+  years = 100
+)
+
+input_5u_perf <- list_5u_perf %>%
+  cross()
+
+
+```
+
+
+##Run
+
+Run the model:
+```{r run}
+
+results = list()
+
+#Run the model over the input lists:
+
+for(i in 1:408){
+  results[[i]] <- sim_5u_perf(b=input_5u_perf[[i]]$b, r=input_5u_perf[[i]]$r,
+                             r_s=input_5u_perf[[i]]$r_s, p=input_5u_perf[[i]]$p,
+                             k=input_5u_perf[[i]]$k,years=input_5u_perf[[i]]$years)
+}
+
+```
+
+##Save CSV
+Re-saved CSV file on 12/6 after fixing the error distribution equations (SO)
+```{r save-csv}
+
+#Create the list of column names:
+
+col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "id", "r_0", "r_s")
+
+#Create a new list with ids
+results_id <- list()
+
+#Loop to add ids to each experiment in the list - make sure the 1:xxx matches the number of lists in the results
+for(i in 1:408){
+  dat <- as.data.frame(matrix(unlist(results[i]), ncol = 7))
+  dat$id <- i
+  dat$r_0 <- rep(input_5u_perf[[i]]$r, 100)
+  dat$r_s <- rep(input_5u_perf[[i]]$r_s, 100)
+  results_id[[i]] <- dat
+}
+
+#Bind all the experiments together
+results_rep5u_perf <- bind_rows(results_id)
+
+#Update the column names:
+colnames(results_rep5u_perf) <- col_names
+
+#Write as CSV:
+# library(here)
+# write.csv(results_rep5u_perf,
+#           file=file.path(here(),"/Results/error/perfect_updating_rep5.csv"),
+#           row.names = FALSE)
+
+```
+
+##Run2 
+
+This time I want to run the model looking at smaller intervals of error between 0.1 and 0.3. There was a big jump between these two in the preliminary results and I want to investigate on a smaller scale. 
+
+```{r run2}
+#Design experiments with different errors
+list_5u <- list(
+  b = c(1500, 4000, 6000),
+  r = seq(0.1, .8, .1),
+  r_s = seq(-0.01767, 0.01623, 0.002), 
+  error = c(0.15,0.2,0.25),
+  p = 0.2,
+  k = 10000,
+  years = 100
+)
+
+input_5u <- list_5u %>%
+  cross()
+
+#Run the model:
+results = list()
+for(i in 1:1224){
+  results[[i]] <- sim_5u(b=input_5u[[i]]$b, r=input_5u[[i]]$r,
+                             r_s=input_5u[[i]]$r_s, p=input_5u[[i]]$p,
+                             k=input_5u[[i]]$k,years=input_5u[[i]]$years, 
+                             error = input_5u[[i]]$error)
+}
+```
+
+##Save CSV
+
+Save the new csv file with a different name:
+```{r save-csv-2}
+#Create the list of column names:
+
+col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "f_ratio_err", "id", "r_0", "error", "r_s",
+               "ratio_cat", "ratio_err_cat", "decision_made", "correct_decision")
+
+#Create a new list with ids
+results_id <- list()
+
+#Loop to add ids to each experiment in the list - make sure the 1:xxx matches the number of lists in the results
+for(i in 1:1224){
+  dat <- as.data.frame(matrix(unlist(results[i]), ncol = 8))
+  dat$id <- i
+  dat$r_0 <- rep(input_5u[[i]]$r, 100)
+  dat$err <- rep(input_5u[[i]]$error, 100)
+  dat$r_s <- rep(input_5u[[i]]$r_s, 100)
+  results_id[[i]] <- dat
+}
+
+#Bind all the experiments together
+results_rep5u <- bind_rows(results_id)
+
+#Mutate columns to compare f_ratio to f_ratio_err 
+results_rep5u_edit <- results_rep5u %>%
+  mutate(ratio_cat = case_when(results_rep5u$V7 == 0 ~ 0,
+                               results_rep5u$V7 <= 1 & results_rep5u$V7 != 0 ~ 1,
+                               results_rep5u$V7 > 1 & results_rep5u$V7 < 2 ~ 2,
+                               results_rep5u$V7 > 2 ~ 3)) %>% 
+  mutate(ratio_err_cat = case_when(results_rep5u$V8 == 0 ~ 0,
+                               results_rep5u$V8 > 0 & results_rep5u$V8 <= 1 ~ 1,
+                               results_rep5u$V8 > 1 & results_rep5u$V8 < 2 ~ 2,
+                               results_rep5u$V8 > 2 ~ 3)) %>%
+  mutate(decision_made = case_when(ratio_cat == ratio_err_cat & ratio_cat !=0 ~ "yes",
+                                      ratio_cat != ratio_err_cat ~ "yes",
+                                      ratio_cat == ratio_err_cat & ratio_cat == 0 ~ "no")) %>% 
+  mutate(correct_decision = case_when(ratio_cat == ratio_err_cat & ratio_cat !=0 ~ "yes",
+                                      ratio_cat != ratio_err_cat ~ "no",
+                                      ratio_cat == ratio_err_cat & ratio_cat == 0 ~ "fail"))
+
+#Update the column names:
+colnames(results_rep5u_edit) <- col_names
+
+#Write as CSV - make sure to change the CSV file name!!
+# library(here)
+# write.csv(results_rep5u_edit,
+#           file=file.path(here(),"/Results/error/error_updating_rep5_.1-.25.csv"),
+#           row.names = FALSE)
+
+```
+
+

@@ -22,6 +22,11 @@ err_rep5u_2 <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep
 err_rep10u <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep10.csv"))
 err_rep10u_2 <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep10_.1-.25.csv"))
 
+#Comparision of perfect management data
+perfect <- read_csv(file=file.path(here(),"/tests/perfect_management/csv_results/perfect.csv"))
+perfect_rep5 <- read_csv(file=file.path(here(),"/tests/perfect_management/csv_results/perfect_rep5.csv"))
+perfect_fishe <- read_csv(file=file.path(here(),"/Results/error/perfect_updating_rep5.csv"))
+
 ```
 
 
@@ -481,5 +486,38 @@ For both 5 and 10 year intervals  the most common year of fishery collapse was t
 Now we want a little more detail about the collapsed fisheries. How many fisheries collapsed at a 0.5 error vs a 0.1 error? How many fisheries collapsed if the starting biomass was 1500 vs 6000? How many fisheries collapsed at different magnitudes of climate change? How many of the collapsed fisheries had slow vs. fast growth rates?  
 
 
+##Cumulative Yield
+
+Changing directions a bit - I want to compare perfect management to perfect given FISHE to some of these actual simulations. 
+Find the simulations under perfect management, perfect given FISHE, and error 0.3 rep 5 that correspond to these initial conditions:
+  - b0 = 4000
+  - r = 0.2
+  - r_s = -0.01767
+
+Perfect Management: ID = 8
+Perfect given FISHE: ID = 6
+Error: ID = 413
+```{r cumulative-yield}
+
+#Calculate cumulative yield under perfect management
+perfect_sub <- perfect %>% 
+  filter(id == 8)
+
+yield_perfect = sum(perfect_sub$c)
+
+#Calculate cumulative yield under perfect management given FISHE
+fishe_sub <- perfect_fishe %>% 
+  filter(id == 5)
+
+yield_fishe = sum(fishe_sub$c)
+
+#Calculate cumulative yield in error simulation
+error_sub <- err_rep5u %>% 
+  filter(id == 413)
+
+yield_error = sum(error_sub$c)
+
+##This shows that perfect given FISHE has higher yields than perfect management which doesn't make sense. But I think this is because perfect management doesn't have assessment intervals and both the error and the perfect given fishe are using assessment intervals which means they aren't exactly comparing apples to apples
+```
 
 
