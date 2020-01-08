@@ -3,6 +3,16 @@ title: "range_shift_hcr"
 output: html_document
 ---
 
+```{r}
+library(tidyverse)
+library(purrr)
+library(repurrrsive)
+```
+
+Error: .1
+R: .1 - .8
+HCR: 5% - 50%
+
 ##Assessment Intervals
 
 Before running the model run the code that matches the assessment interval you would like to use:
@@ -254,8 +264,8 @@ results_range <- bind_rows(results_id)
 colnames(results_range) <- col_names
 
 #Write as CSV:
-library(here)
-write.csv(results_range, file=file.path(here(),"/Results/range_shifts/hcrs/range_hcr_0rep.csv"),
-            row.names = FALSE)
+#library(here)
+#write.csv(results_range, file=file.path(here(),"/Results/range_shifts/hcrs/range_hcr_5rep.csv"),
+#            row.names = FALSE)
 
 ```
