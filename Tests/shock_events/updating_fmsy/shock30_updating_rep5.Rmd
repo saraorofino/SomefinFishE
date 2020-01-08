@@ -108,25 +108,14 @@ sim_shock5u <- function(b, r, r_s, error, p, k, years){
   for (t in 2:years) {
     if(results$year[t] %in% assess_int){
     
-    #Determine if it is an El Nino year:
-    results$nino[t] <-  rbinom(1, 1,.2) #assuming there's a 20% chance of an El Nino in any given year
-    #Define how much productivity will decrease in an El Nino year:
-    r_nino <- -0.30 
-    
-    #Determine r[t] based on if it is an el nino year or not:
-    if(results$nino[t]==1){
-      results$r[t] = results$r[t-1] + (r_nino*results$r[t-1]) #in el nino year decrease by the r_nino term
-    }
-    if(results$nino[t]==0){
-      results$r[t] = results$r[t-1] + (r_s*results$r[t-1]) #not an el nino year r calculation stays the same
-    }       
+    results$r[t] = results$r[t-1] + (r_s*results$r[t-1])
     
     ##HCR decision will change how f is calculated - this step must come before calculating c 
     # Calculate fmsy in time t from current r 
     r_calc2 <- results$r[t]
     results$f_msy[t] <- fmsy(r=r_calc2, p=p)
     results$f_ratio[t] <- results$f[t-1]/results$f_msy[t-1] #the ratio of f/fmsy at the beginning of the year is based on last years f and fmsy
-
+    
     #Transform to new mean (mu) if f_ratio is greater than 0:
     if(results$f_ratio[t] != 0){
        mu_2 <- log(results$f_ratio[t])
@@ -136,7 +125,7 @@ sim_shock5u <- function(b, r, r_s, error, p, k, years){
     if(results$f_ratio[t] == 0){
        results$f_ratio_err[t] = 0
     }
-    
+
     #Decisions for f this year based on the ratio with error in the previous year 
     if(results$f_ratio_err[t] >= 2){
        results$f[t] = 0 
@@ -150,10 +139,21 @@ sim_shock5u <- function(b, r, r_s, error, p, k, years){
     if(results$f_ratio_err[t] < 1){
        results$f[t] = 1.05*results$f[t-1] #f increases by 5% from last year
    } 
+
+    #Determine if it is an El Nino year:
+    results$nino[t] <-  rbinom(1, 1,.2) #assuming there's a 20% chance of an El Nino in any given year
+    #Define how much productivity will decrease in an El Nino year:
+    r_nino <- 0.70 #decline by 30%
     
-    
-    #Calculate remaining results - pay attention to the order!
-    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    #Determine growth in biomass based on a 30% decline in r:
+    if(results$nino[t]==1){
+      results$b[t] = results$b[t-1] + ((r_nino*results$r[t-1]) / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    }
+    if(results$nino[t]==0){
+      results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    }
+
+    #Calculate catch
     results$c[t] = results$f[t] * results$b[t]
    } 
 
@@ -162,17 +162,18 @@ sim_shock5u <- function(b, r, r_s, error, p, k, years){
     #Determine if it is an El Nino year:
     results$nino[t] <-  rbinom(1, 1,.2) #assuming there's a 20% chance of an El Nino in any given year
     #Define how much productivity will decrease in an El Nino year:
-    r_nino <- -0.30 
+    r_nino <- 0.70 
     
-    #Determine r[t] based on if it is an el nino year or not:
+    #Determine growth in biomass based on a 30% decline in r:
     if(results$nino[t]==1){
-      results$r[t] = results$r[t-1] + (r_nino*results$r[t-1]) #in el nino year decrease by the r_nino term
+      results$b[t] = results$b[t-1] + ((r_nino*results$r[t-1]) / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
     }
     if(results$nino[t]==0){
-      results$r[t] = results$r[t-1] + (r_s*results$r[t-1]) #not an el nino year r calculation stays the same
-    }   
+      results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    } 
     
-    results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    #Calculate the remaining results:
+    results$r[t] = results$r[t-1] + (r_s*results$r[t-1])
     results$f[t] = results$f[t-1]
     results$c[t] = results$f[t] * results$b[t]
     r_calc3 <- results$r[t]
