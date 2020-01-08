@@ -15,6 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #Packages
 library(tidyverse)
 library(here)
+library(RColorBrewer)
 
 #Data
 err_rep5u <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep5.csv"))
@@ -488,36 +489,145 @@ Now we want a little more detail about the collapsed fisheries. How many fisheri
 
 ##Cumulative Yield
 
-Changing directions a bit - I want to compare perfect management to perfect given FISHE to some of these actual simulations. 
-Find the simulations under perfect management, perfect given FISHE, and error 0.3 rep 5 that correspond to these initial conditions:
+###Slow Growing
+Initial Conditions of Experiment:
   - b0 = 4000
-  - r = 0.2
+  - r = 0.2 
   - r_s = -0.01767
+  - error = 0.3
 
 Perfect Management: ID = 8
-Perfect given FISHE: ID = 6
+Perfect given FISHE: ID = 5
 Error: ID = 413
-```{r cumulative-yield}
+
+For 0.1
+Perfect ID = 2
+Fishe ID = 2
+Error ID = 410
+```{r cumulative-yield-slow, include=FALSE}
 
 #Calculate cumulative yield under perfect management
-perfect_sub <- perfect %>% 
+perfect_slow <- perfect %>% 
   filter(id == 8)
 
-yield_perfect = sum(perfect_sub$c)
+yield_perfect_slow = sum(perfect_slow$c)
 
 #Calculate cumulative yield under perfect management given FISHE
-fishe_sub <- perfect_fishe %>% 
+fishe_slow <- perfect_fishe %>% 
   filter(id == 5)
 
-yield_fishe = sum(fishe_sub$c)
+yield_fishe_slow = sum(fishe_slow$c)
 
 #Calculate cumulative yield in error simulation
-error_sub <- err_rep5u %>% 
-  filter(id == 413)
+error_slow <- err_rep5u %>% 
+  filter(id == 413) %>% 
+  filter(year < 36)
 
-yield_error = sum(error_sub$c)
+yield_error_slow = sum(error_slow$c)
 
-##This shows that perfect given FISHE has higher yields than perfect management which doesn't make sense. But I think this is because perfect management doesn't have assessment intervals and both the error and the perfect given fishe are using assessment intervals which means they aren't exactly comparing apples to apples
 ```
 
 
+So perfect management with FISHE has slightly higher absolute yields than perfect management... but the biomass at perfect management is basically stablized around 4018 and the FISHE biomass is still declining around 3600 so maybe that kind of makes sense
+
+Graph biomass and catch over time for perfect management, perfect given FISHE, and the error simulation:
+```{r biomass-graphs-slow, echo=FALSE}
+
+#Biomass over time:
+biomass_slow <- ggplot(perfect_slow, aes(x=year, y=b)) + 
+  geom_line(aes(color = "a")) + 
+  geom_line(data = fishe_slow, aes(x=year, y=b, color = "b")) +
+  geom_line(data =error_slow, aes(x=year, y=b, color = "c")) +
+  scale_color_manual(name = '', breaks = c("a","b", "c"), values = c('darkgreen', 'navy','firebrick4'),
+                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with Error")) +
+  scale_y_continuous(expand = c(0,0), limits = c(3000,4100), breaks = seq(3000,4100,200)) +
+  scale_x_continuous(expand = c(0,0.5)) + 
+  labs(x = "Year", y = "Biomass") +
+  theme_bw()
+
+biomass_slow
+
+#Catch over time:
+catch_slow <- ggplot(perfect_slow, aes(x=year, y=c)) + 
+  geom_line(aes(color = "a")) +
+  geom_line(data=fishe_slow, aes(x=year, y=c, color = "b")) +
+  geom_line(data=error_slow, aes(x=year, y=c, color = "c")) +
+  geom_vline(xintercept = 34, color = "grey25", linetype = "longdash") +
+  scale_color_manual(name = '', breaks = c("a","b", "c"), values = c('darkgreen', 'navy','firebrick4'),
+                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with Error")) +
+  scale_y_continuous(expand = c(0,0), limits = c(100,705), breaks = seq(100,700,100)) +
+  scale_x_continuous(expand = c(0,0.5)) + 
+  labs(x = "Year", y = "Catch") + 
+  theme_bw()
+
+catch_slow
+
+```
+
+###Fast Growing
+Initial Conditions of Experiment:
+  - b0 = 4000
+  - r = 0.8
+  - r_s = -0.01767
+  - error = 0.3
+  
+Perfect Management: ID = 44
+Perfect given FISHE: ID = 23
+Error: ID = 431
+```{r cumulative-yield-fast, include=FALSE}
+
+#Calculate cumulative yield under perfect management
+perfect_fast <- perfect %>% 
+  filter(id == 44)
+
+yield_perfect_fast = sum(perfect_fast$c)
+
+#Calculate cumulative yield under perfect management given FISHE
+fishe_fast <- perfect_fishe %>% 
+  filter(id == 23)
+
+yield_fishe_fast = sum(fishe_fast$c)
+
+#Calculate cumulative yield in error simulation
+error_fast <- err_rep5u %>% 
+  filter(id == 431) %>% 
+  filter(year < 21)
+
+yield_error_fast = sum(error_fast$c)
+
+```
+
+
+Graph biomass and catch over time for perfect management, perfect given FISHE, and the error simulation:
+```{r biomass-graphs-fast, echo=FALSE}
+
+#Biomass over time:
+biomass_fast <- ggplot(perfect_fast, aes(x=year, y=b)) + 
+  geom_line(aes(color = "a")) + 
+  geom_line(data = fishe_fast, aes(x=year, y=b, color = "b")) +
+  geom_line(data =error_fast, aes(x=year, y=b, color = "c")) +
+  scale_color_manual(name = '', breaks = c("a","b", "c"), values = c('darkgreen', 'navy','firebrick4'),
+                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with Error")) +
+  scale_y_continuous(expand = c(0,0), limits = c(2500,4100), breaks = seq(2500,4100,500)) +
+  scale_x_continuous(expand = c(0,0.5)) + 
+  labs(x = "Year", y = "Biomass") +
+  theme_bw()
+
+biomass_fast
+
+#Catch over time:
+catch_fast <- ggplot(perfect_fast, aes(x=year, y=c)) + 
+  geom_line(aes(color = "a")) +
+  geom_line(data=fishe_fast, aes(x=year, y=c, color = "b")) +
+  geom_line(data=error_fast, aes(x=year, y=c, color = "c")) +
+  geom_vline(xintercept = 19, color = "grey25", linetype = "longdash") +
+  scale_color_manual(name = '', breaks = c("a","b", "c"), values = c('darkgreen', 'navy','firebrick4'),
+                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with Error")) +
+  scale_y_continuous(expand = c(0,0), limits = c(430,3000), breaks = seq(500,3000,500)) +
+  scale_x_continuous(expand = c(0,0.5)) + 
+  labs(x = "Year", y = "Catch") + 
+  theme_bw()
+
+catch_fast
+
+```
