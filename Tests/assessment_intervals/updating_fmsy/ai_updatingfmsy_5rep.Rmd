@@ -120,7 +120,9 @@ sim_ai <- function(b, r, r_s, error, p, k, years, hcr){
        #Draw the f_ratio_err
        results$f_ratio_err[t] <- rlnorm(1, meanlog = mu_2, sdlog = sd_1)
    }
-
+    if(results$f_ratio_p[t] == 0){
+       results$f_ratio_err[t] = 0
+    }
     
     #Decisions for f this year based on the ratio with error in the previous year 
     if(results$f_ratio_err[t] >= 2){
@@ -239,8 +241,8 @@ results_ai <- bind_rows(results_id)
 colnames(results_ai) <- col_names
 
 #Write as CSV:
-# library(here)
-#  write.csv(results_ai, file=file.path(here(),"/Results/assessment_intervals/ai_updatingfmsy_5rep.csv"),
+#library(here)
+#write.csv(results_ai, file=file.path(here(),"/Results/assessment_intervals/ai_updatingfmsy_5rep.csv"),
 #            row.names = FALSE)
 
 ```

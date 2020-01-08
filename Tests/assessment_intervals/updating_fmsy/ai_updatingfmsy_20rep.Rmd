@@ -120,7 +120,9 @@ sim_ai <- function(b, r, r_s, error, p, k, years, hcr){
        #Draw the f_ratio_err
        results$f_ratio_err[t] <- rlnorm(1, meanlog = mu_2, sdlog = sd_1)
    }
-
+    if(results$f_ratio_p[t] == 0){
+       results$f_ratio_err[t] = 0
+    }
     
     #Decisions for f this year based on the ratio with error in the previous year 
     if(results$f_ratio_err[t] >= 2){
@@ -166,7 +168,7 @@ sim_ai <- function(b, r, r_s, error, p, k, years, hcr){
 Simple results check:
 ```{r simple-check}
 
-check_result_ai <- sim_hcr(b=1500, r=0.2, r_s=-0.005, error=0.10, p=0.2, k=10000, years=100, hcr = .9)
+check_result_ai <- sim_ai(b=1500, r=0.2, r_s=-0.005, error=0.10, p=0.2, k=10000, years=100, hcr = .9)
 ```
 
 ##Model Inputs List
@@ -203,7 +205,7 @@ results = list()
 #Run the model over the input lists:
 
 for(i in 1:408){
-  results[[i]] <- sim_hcr(b=input_ai[[i]]$b, r=input_ai[[i]]$r,
+  results[[i]] <- sim_ai(b=input_ai[[i]]$b, r=input_ai[[i]]$r,
                              r_s=input_ai[[i]]$r_s, p=input_ai[[i]]$p,
                              k=input_ai[[i]]$k,years=input_ai[[i]]$years, 
                              error = input_ai[[i]]$error, hcr = input_ai[[i]]$hcr)
