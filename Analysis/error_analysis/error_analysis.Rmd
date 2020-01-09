@@ -394,7 +394,7 @@ rep5_collapsed <- err_rep5u %>%
   group_by(id) %>% 
   tally() #this is column (n) is the number of "fail" per ID - ex: 96 means it failed in year 4 and had 96/100 years recorded as fail
 
-collapse_rep5 <- nrow(rep5_collapsed) #Number of experiments (unique ids) that collapsed 
+collapse_rep5 <- nrow(rep5_collapsed) #Number of experiments (unique ids) that collapsed - 538 
 
 #Find the most common number of years collapsed:
 # R doesn't have a function for finding the mode so you have to create one
@@ -422,6 +422,9 @@ rep5_max2 <- min(rep5_collapsed2$n)
 rep5_min2 <- max(rep5_collapsed2$n) 
 
 rep5_prob2 <- collapse2_rep5 / total_experiments
+
+
+
 ###### Rep 10 
 rep10_collapsed <- err_rep10u %>% 
   filter(decision_made == "no") %>% 
@@ -464,7 +467,8 @@ Looking at the error between 0.1 and 0.3 only 331 fisheries collapsed
  - Minimum = Year 4    
  - Maximum = Year 99     
 
-Probability of collapse = 27.04%     
+Probability of collapse = 27.04% 
+
 
 **Rep10**  
 In the first experiment (error 0.1, 0.3, 0.5) 503 fisheries collapsed     
@@ -480,12 +484,105 @@ Looking at the error between 0.1 and 0.3 only 376 fisheries collapsed
  - Maximum = Year 99   
 
 Probability of collapse = 30.72%     
+  
 
 For both 5 and 10 year intervals  the most common year of fishery collapse was the year before the next assessment   
 
 
-Now we want a little more detail about the collapsed fisheries. How many fisheries collapsed at a 0.5 error vs a 0.1 error? How many fisheries collapsed if the starting biomass was 1500 vs 6000? How many fisheries collapsed at different magnitudes of climate change? How many of the collapsed fisheries had slow vs. fast growth rates?  
 
+Now we want a little more detail about the collapsed fisheries. First, how many fisheries collapsed at a 0.5 error vs 0.3 error vs. 0.1 error? 
+```{r collapse-at-error}
+total_experiments <- 1224
+
+###### Rep 5
+##Now look at the probability of failure at each of the three error points (0.1,0.3,0.5) and compare:
+#0.1 Error
+rep5_1 <- err_rep5u %>% 
+  filter(error == 0.1) %>% 
+  filter(decision_made == "no") %>% 
+  group_by(id) %>% 
+  tally()
+collapse0.1_rep5 <- nrow(rep5_1)
+rep5_0.1prob <- collapse0.1_rep5 / total_experiments
+#0.3 Error
+rep5_3 <- err_rep5u %>% 
+  filter(error == 0.3) %>% 
+  filter(decision_made == "no") %>% 
+  group_by(id) %>% 
+  tally()
+collapse0.3_rep5 <- nrow(rep5_3)
+rep5_0.3prob <- collapse0.3_rep5 / total_experiments
+#0.5 Error
+rep5_5 <- err_rep5u %>% 
+  filter(error == 0.5) %>% 
+  filter(decision_made == "no") %>% 
+  group_by(id) %>% 
+  tally()
+collapse0.5_rep5 <- nrow(rep5_5)
+rep5_0.5prob <- collapse0.5_rep5 / total_experiments
+
+###### Rep 10
+##Now look at the probability of failure at each of the three error points (0.1,0.3,0.5) and compare:
+#0.1 Error
+rep10_1 <- err_rep10u %>% 
+  filter(error == 0.1) %>% 
+  filter(decision_made == "no") %>% 
+  group_by(id) %>% 
+  tally()
+collapse0.1_rep10 <- nrow(rep10_1)
+rep10_0.1prob <- collapse0.1_rep10 / total_experiments
+#0.3 Error
+rep10_3 <- err_rep10u %>% 
+  filter(error == 0.3) %>% 
+  filter(decision_made == "no") %>% 
+  group_by(id) %>% 
+  tally()
+collapse0.3_rep10 <- nrow(rep10_3)
+rep10_0.3prob <- collapse0.3_rep10 / total_experiments
+#0.5 Error
+rep10_5 <- err_rep10u %>% 
+  filter(error == 0.5) %>% 
+  filter(decision_made == "no") %>% 
+  group_by(id) %>% 
+  tally()
+collapse0.5_rep10 <- nrow(rep10_5)
+rep10_0.5prob <- collapse0.5_rep10 / total_experiments
+```
+
+
+**Rep5**  
+Probability of collapse at different errors:  
+  - 0.1: 4.82%   
+  - 0.3: 15.11%  
+  - 0.5: 24.02%  
+
+**Rep10**  
+Probability of collapse at different errors:  
+  - 0.1: 6.54%   
+  - 0.3: 14.62%  
+  - 0.5: 19.93% 
+  
+Are those differences significant?   
+Use a chi square test to test for significant association in proportions  
+Is there a significant effect of error on fisheries collapse?
+H0: There is no significant effect of error on fisheries collapse (proportions are similar regardless of error)
+HA: There is a significant effect of error on fisheries collapse (proportions are significantly different at different errors)
+```{r chi-square-error}
+### Rep 5
+#First we need to get just the counts of the different errors together in one dataframe:
+one <- collapse0.1_rep5
+three <- collapse0.3_rep5
+five <- collapse0.5_rep5
+rep5_counts <- data.frame(one, three, five)
+
+#chi-square test
+rep5_chi <- chisq.test(rep5_counts)
+rep5_chi
+## I'm not really sure about this set up. I only wanted to test if there was a significant association between the number of failures and the amount of error but I feel like I'm missing something...
+```
+
+
+How many fisheries collapsed if the starting biomass was 1500 vs 6000? How many fisheries collapsed at different magnitudes of climate change? How many of the collapsed fisheries had slow vs. fast growth rates?  
 
 ##Cumulative Yield
 
@@ -602,14 +699,25 @@ Initial Conditions of Experiment:
   
 Perfect Management: ID = 44
 Perfect given FISHE: ID = 23
-Error: ID = 23
+Error: ID = 23, 
 ```{r error-fast}
 #Find the right error experiment to use
 err_fast <- err_rep5u %>% 
   filter(r_s == -0.01767) %>% 
   filter(r_0 == 0.8)
-
 #Use experiment 23
+
+#Find the experiment with same r0 and r_s for 0.3 error and 0.5 error 
+err_3f <- err_rep5u %>% 
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 == 0.8) %>% 
+  filter(error == 0.3)
+#431
+err_5f <- err_rep5u %>% 
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 == 0.8) %>% 
+  filter(error == 0.5)
+#839
 ```
 
 
@@ -628,10 +736,18 @@ fishe_fast <- perfect_fishe %>%
 yield_fishe_fast = sum(fishe_fast$c)
 
 #Calculate cumulative yield in error simulation
-error_fast <- err_rep5u %>% 
+error1_fast <- err_rep5u %>% 
   filter(id == 23)
+error3_fast <- err_rep5u %>% 
+  filter(id == 431) %>% 
+  filter(year < 21)
+error5_fast <- err_rep5u %>% 
+  filter(id == 839) %>% 
+  filter(year < 76)
 
-yield_error_fast = sum(error_fast$c)
+yield_error_fast1 = sum(error1_fast$c)
+yield_error_fast3 = sum(error3_fast$c)
+yield_error_fast5 = sum(error5_fast$c)
 
 ```
 
@@ -643,10 +759,12 @@ Graph biomass and catch over time for perfect management, perfect given FISHE, a
 biomass_fast <- ggplot(perfect_fast, aes(x=year, y=b)) + 
   geom_line(aes(color = "a")) + 
   geom_line(data = fishe_fast, aes(x=year, y=b, color = "b")) +
-  geom_line(data =error_fast, aes(x=year, y=b, color = "c")) +
-  scale_color_manual(name = '', breaks = c("a","b", "c"), values = c('darkgreen', 'navy','firebrick4'),
-                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with Error")) +
-  scale_y_continuous(expand = c(0,0), limits = c(2500,4100), breaks = seq(2500,4100,500)) +
+  geom_line(data =error1_fast, aes(x=year, y=b, color = "c")) +
+  geom_line(data =error3_fast, aes(x=year, y=b, color = "d")) +
+  geom_line(data =error5_fast, aes(x=year, y=b, color = "e")) +
+  scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"), values = c('darkgreen', 'navy','firebrick4', 'firebrick4', 'firebrick4'),
+                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
+  scale_y_continuous(expand = c(0,0), limits = c(2300,4350), breaks = seq(2500,4100,500)) +
   scale_x_continuous(expand = c(0,0.5)) + 
   labs(x = "Year", y = "Biomass") +
   theme_bw()
@@ -657,9 +775,11 @@ biomass_fast
 catch_fast <- ggplot(perfect_fast, aes(x=year, y=c)) + 
   geom_line(aes(color = "a")) +
   geom_line(data=fishe_fast, aes(x=year, y=c, color = "b")) +
-  geom_line(data=error_fast, aes(x=year, y=c, color = "c")) +
-  scale_color_manual(name = '', breaks = c("a","b", "c"), values = c('darkgreen', 'navy','firebrick4'),
-                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with Error")) +
+  geom_line(data=error1_fast, aes(x=year, y=c, color = "c")) +
+  geom_line(data=error3_fast, aes(x=year, y=c, color = "d")) +
+  geom_line(data=error5_fast, aes(x=year, y=c, color = "e")) +
+  scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"), values = c('darkgreen', 'navy','firebrick4', 'firebrick4', 'firebrick4'),
+                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
   scale_y_continuous(expand = c(0,0), limits = c(430,3000), breaks = seq(500,3000,500)) +
   scale_x_continuous(expand = c(0,0.5)) + 
   labs(x = "Year", y = "Catch") + 
