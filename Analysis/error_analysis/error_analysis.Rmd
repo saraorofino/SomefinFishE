@@ -652,7 +652,7 @@ yield_error5_slow = sum(error5_slow$c)
 So perfect management with FISHE has slightly higher absolute yields than perfect management... but the biomass at perfect management is basically stablized around 4018 and the FISHE biomass is still declining around 3600 so maybe that kind of makes sense
 
 Graph biomass and catch over time for perfect management, perfect given FISHE, and the error simulation:
-```{r biomass-graphs-slow, echo=FALSE}
+```{r biomass-graphs-slow, echo=FALSE, warning=FALSE}
 
 #Biomass over time:
 biomass_slow <- ggplot(perfect_slow, aes(x=year, y=b)) + 
@@ -675,7 +675,7 @@ biomass_slow
 catch_slow <- ggplot(perfect_slow, aes(x=year, y=c)) + 
   geom_line(aes(color = "a")) +
   geom_line(data=fishe_slow, aes(x=year, y=c, color = "b")) +
-  geom_line(data=error_slow, aes(x=year, y=c, color = "c")) +
+  geom_line(data=error1_slow, aes(x=year, y=c, color = "c")) +
   geom_line(data =error3_slow, aes(x=year, y=c, color = "d")) +
   geom_line(data =error5_slow, aes(x=year, y=c, color = "e")) +  
   scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"), values = c('darkgreen', 'navy','firebrick4', 'firebrick4', 'firebrick4'),
@@ -753,7 +753,7 @@ yield_error_fast5 = sum(error5_fast$c)
 
 
 Graph biomass and catch over time for perfect management, perfect given FISHE, and the error simulation:
-```{r biomass-graphs-fast, echo=FALSE}
+```{r biomass-graphs-fast, echo=FALSE, warning=FALSE}
 
 #Biomass over time:
 biomass_fast <- ggplot(perfect_fast, aes(x=year, y=b)) + 
