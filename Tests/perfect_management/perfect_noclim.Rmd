@@ -1,0 +1,121 @@
+---
+title: "perfect_noclim"
+author: "Sara Orofino"
+date: "1/9/2020"
+output: html_document
+---
+
+#{.tabset}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+##Goal
+The goal of these runs is to simulate what "perfect management" without climate change. We are assuming that the goal of the fishery is to manage at MSY. Perfect management would mean harvesting each year at Fmsy. 
+
+##Model
+
+Set f = Fmsy in every year
+```{r model}
+
+sim_perfect <- function(b, r, p, k, years){
+  
+  results <- data.frame(
+    b = rep(NA, years), c = rep(NA, years), 
+    year = 1:years) #Setup the results dataframe 
+  
+  #Set the initial result for the outputs in year 1
+  results$b[1] = b
+  fmsy <- r * (1 / (1+p)) #calculate Fmsy 
+  results$c[1] = fmsy * results$b[1] #calculate catch in year one based on f_msy
+  
+  ## Loop the model over the specified number of years
+  for (t in 2:years) {
+
+    results$b[t] = results$b[t-1] + (r / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
+    results$c[t] = fmsy * results$b[t]
+
+}
+  return(results)
+}
+```
+
+##Model Check
+
+Simple results check:
+```{r simple-check-fratio-error}
+
+check_result_perfect <- sim_perfect(b=6000, r=0.2, p=0.2, k=10000, years=100)
+
+plot(check_result_perfect$b)
+plot(check_result_perfect$c)
+```
+
+##Model Inputs List
+
+Create the experiment input list:
+```{r experiment-inputs}
+
+#Design experiments
+list_perfect <- list(
+  b = c(1500, 4000, 6000),
+  r = seq(0.1, .8, .05),
+  p = 0.2,
+  k = 10000,
+  years = 100
+)
+
+input_perfect <- list_perfect %>%
+  cross()
+
+
+```
+
+
+##Run
+
+Run the model:
+```{r run}
+
+results = list()
+
+#Run the model over the input lists:
+
+for(i in 1:45){
+  results[[i]] <- sim_perfect(b=input_perfect[[i]]$b, r=input_perfect[[i]]$r,
+                             p=input_perfect[[i]]$p, k=input_perfect[[i]]$k, years=input_perfect[[i]]$years)
+}
+
+```
+
+##Save CSV
+```{r save-csv}
+
+#Create the list of column names:
+col_names <- c("b", "c", "year", "id", "r_0", "b_0")
+
+#Create a new list with ids
+results_id <- list()
+
+#Loop to add ids to each experiment in the list - make sure the 1:xxx matches the number of lists in the results
+for(i in 1:45){
+  dat <- as.data.frame(matrix(unlist(results[i]), ncol = 3))
+  dat$id <- i
+  dat$r_0 <- rep(input_perfect[[i]]$r, 100)
+  dat$b_o <- rep(input_perfect[[i]]$b, 100)
+  results_id[[i]] <- dat
+}
+
+#Bind all the experiments together
+results_perfect <- bind_rows(results_id)
+
+#Update the column names:
+colnames(results_perfect) <- col_names
+
+#Write as CSV:
+# library(here)
+# write.csv(results_perfect, file=file.path(here(),"/Tests/perfect_management/csv_results/perfect_noclim.csv"),
+#           row.names = FALSE)
+
+```
