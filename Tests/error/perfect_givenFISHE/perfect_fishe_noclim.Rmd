@@ -123,7 +123,7 @@ list_noclim <- list(
   p = 0.2,
   k = 10000,
   years = 100,
-  hcr = c(0.80, 0.75, 0.70)
+  hcr = seq(0.5, 0.8, 0.05)
 )
 
 input_noclim <- list_noclim %>%
@@ -142,7 +142,7 @@ results = list()
 
 #Run the model over the input lists:
 
-for(i in 1:72){
+for(i in 1:168){
   results[[i]] <- sim_noclim(b=input_noclim[[i]]$b, r=input_noclim[[i]]$r,
                              p=input_noclim[[i]]$p, k=input_noclim[[i]]$k,
                              years=input_noclim[[i]]$years, hcr = input_noclim[[i]]$hcr)

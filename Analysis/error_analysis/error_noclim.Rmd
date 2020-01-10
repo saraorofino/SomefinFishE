@@ -5,16 +5,18 @@ date: "1/9/2020"
 output: html_document
 ---
 #{.tabset}
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(here)
+library(RColorBrewer)
 ```
 
 ##Data
 Need to compare the new error simualtions with no climate change to perfect management and perfect management given FISHE to see what HCRs work.
 
 Read in data:
-```{r data, message=FALSE, warning=FALSE}
+```{r data, message=FALSE, warning=FALSE, include=FALSE}
 perfect <- read_csv(file=file.path(here(),"/tests/perfect_management/csv_results/perfect_noclim.csv"))
 perfect_fishe <- read_csv(file=file.path(here(),"/Results/error/perfect_fishe_noclim.csv"))
 error <- read_csv(file=file.path(here(),"/Results/error/error_noclim.csv"))
@@ -23,7 +25,7 @@ error <- read_csv(file=file.path(here(),"/Results/error/error_noclim.csv"))
 Want to graph biomass and catch over time for perfect, perfect given FISHE and error at the different HCRs to see which ones work
 
 First let's separate by HCRs:
-```{r group-by-hcrs}
+```{r group-by-hcrs, include=FALSE}
 #For perfect given FISHE:
 hcr2 <- perfect_fishe %>% 
   filter(hcr == 0.80)
@@ -45,9 +47,9 @@ err3 <- error %>%
   filter(hcr == 0.70)
 ```
 
-##20% Reduction
-First need to get a subset that's easier to graph. Since b0 = 1500 and r = 0.1 is probably the most likely to not do well I'll subset for that.
-```{r wrangle-20}
+##20% Reduction 
+First need to get a subset that's easier to graph. Since b0 = 1500 and r = 0.1 is probably the most likely to not do well I'll subset for that.  
+```{r wrangle-20, include=FALSE}
 #perfect management:
 sub_perf <- perfect %>%
   filter(id == 1)
@@ -59,37 +61,163 @@ sub_fishe <- hcr2 %>%
 #error 0.1:
 sub_1 <- err2 %>% 
   filter(id == 1)
-  
+#error 0.3:
+sub_3 <- err2 %>% 
+  filter(id == 25)
+#error 0.5:
+sub_5 <- err2 %>% 
+  filter(id == 49)
 ```
 
-
+Graph biomass and catch over time:  
 ```{r biomass-graphs-20, echo=FALSE, warning=FALSE}
 
 #Biomass over time:
-biomass_20 <- ggplot(perfect, aes(x=year, y=b, color = "a")) +
+biomass_20 <- ggplot(sub_perf, aes(x=year, y=b, color = "a")) +
   geom_line() +
-  scale_color_manual(name = "", breaks = c("a"), values = c("darkgreen"), labels = c("Perfect Management")) +
-  labs(x = "Year", y = "Biomass") +
+  geom_line(data = sub_fishe, aes(x=year, y=b, color = "b")) +
+  geom_line(data = sub_1, aes(x=year, y=b, color = "c")) +
+  geom_line(data = sub_3, aes(x=year, y=b, color = "d")) +
+  geom_line(data = sub_5, aes(x=year, y=b, color = "e")) +
+  scale_color_manual(name = "", breaks = c("a", "b", "c", "d", "e"), 
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'), 
+                     labels = c("Perfect Management", "Perfect given FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
+  scale_x_continuous(expand = c(0,0.5)) +
+  labs(x = "Year", y = "Biomass", title = "20% HCR") +
   theme_bw()
 
 biomass_20
 
 #Catch over time:
-catch_20 <- ggplot(perfect_slow, aes(x=year, y=c)) + 
+catch_20 <- ggplot(sub_perf, aes(x=year, y=c)) + 
   geom_line(aes(color = "a")) +
-  geom_line(data=fishe_slow, aes(x=year, y=c, color = "b")) +
-  geom_line(data=error1_slow, aes(x=year, y=c, color = "c")) +
-  geom_line(data =error3_slow, aes(x=year, y=c, color = "d")) +
-  geom_line(data =error5_slow, aes(x=year, y=c, color = "e")) +  
-  scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"), values = c('darkgreen', 'navy','firebrick4', 'firebrick4', 'firebrick4'),
-                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error",
-                                "FISHE with 50% Error")) +
-  scale_y_continuous(expand = c(0,0), limits = c(100,705), breaks = seq(100,700,100)) +
+  geom_line(data = sub_fishe, aes(x=year, y=c, color = "b")) +
+  geom_line(data = sub_1, aes(x=year, y=c, color = "c")) +
+  geom_line(data = sub_3, aes(x=year, y=c, color = "d")) +
+  geom_line(data = sub_5, aes(x=year, y=c, color = "e")) +
+  scale_color_manual(name = "", breaks = c("a", "b", "c", "d", "e"), 
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'), 
+                     labels = c("Perfect Management", "Perfect given FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
   scale_x_continuous(expand = c(0,0.5)) + 
-  labs(x = "Year", y = "Catch") + 
+  labs(x = "Year", y = "Catch", title = "20% HCR") + 
   theme_bw()
 
-catch_slow
+catch_20
 
 ```
 
+##25% Reduction
+
+Subset for b0 = 1500 and r = 0.1; perfect management won't change so just need to subset for perfect given FISHE and the error tests.        
+```{r wrangle-25, include=FALSE}
+
+#perfect with fishe:
+sub2_fishe <- hcr25 %>%
+  filter(id == 25)
+
+#error 0.1:
+sub2_1 <- err25 %>% 
+  filter(id == 73)
+#error 0.3:
+sub2_3 <- err25 %>% 
+  filter(id == 97)
+#error 0.5:
+sub2_5 <- err25 %>% 
+  filter(id == 121) %>% 
+  filter(year < 6)
+```
+
+Graph biomass and catch over time:  
+```{r biomass-graphs-20, echo=FALSE, warning=FALSE}
+
+#Biomass over time:
+biomass_25 <- ggplot(sub_perf, aes(x=year, y=b, color = "a")) +
+  geom_line() +
+  geom_line(data = sub2_fishe, aes(x=year, y=b, color = "b")) +
+  geom_line(data = sub2_1, aes(x=year, y=b, color = "c")) +
+  geom_line(data = sub2_3, aes(x=year, y=b, color = "d")) +
+  geom_line(data = sub2_5, aes(x=year, y=b, color = "e")) +
+  scale_color_manual(name = "", breaks = c("a", "b", "c", "d", "e"), 
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'), 
+                     labels = c("Perfect Management", "Perfect given FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
+  scale_x_continuous(expand = c(0,0.5)) +
+  labs(x = "Year", y = "Biomass", title = "25% HCR") +
+  theme_bw()
+
+biomass_25
+
+#Catch over time:
+catch_25 <- ggplot(sub_perf, aes(x=year, y=c)) + 
+  geom_line(aes(color = "a")) +
+  geom_line(data = sub2_fishe, aes(x=year, y=c, color = "b")) +
+  geom_line(data = sub2_1, aes(x=year, y=c, color = "c")) +
+  geom_line(data = sub2_3, aes(x=year, y=c, color = "d")) +
+  geom_line(data = sub2_5, aes(x=year, y=c, color = "e")) +
+  scale_color_manual(name = "", breaks = c("a", "b", "c", "d", "e"), 
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'), 
+                     labels = c("Perfect Management", "Perfect given FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
+  scale_x_continuous(expand = c(0,0.5)) + 
+  labs(x = "Year", y = "Catch", title = "25% HCR") + 
+  theme_bw()
+
+catch_25
+
+```
+
+
+##30% Reduction
+
+Subset for b0 = 1500 and r = 0.1; perfect management won't change so just need to subset for perfect given FISHE and the error tests.          
+```{r wrangle-25, include=FALSE}
+
+#perfect with fishe:
+sub3_fishe <- hcr3 %>%
+  filter(id == 49)
+
+#error 0.1:
+sub3_1 <- err3 %>% 
+  filter(id == 145)
+#error 0.3:
+sub3_3 <- err3 %>% 
+  filter(id == 169)
+#error 0.5:
+sub3_5 <- err3 %>% 
+  filter(id == 193)
+```
+
+Graph biomass and catch over time:    
+```{r biomass-graphs-20, echo=FALSE, warning=FALSE}
+
+#Biomass over time:
+biomass_3 <- ggplot(sub_perf, aes(x=year, y=b, color = "a")) +
+  geom_line() +
+  geom_line(data = sub3_fishe, aes(x=year, y=b, color = "b")) +
+  geom_line(data = sub3_1, aes(x=year, y=b, color = "c")) +
+  geom_line(data = sub3_3, aes(x=year, y=b, color = "d")) +
+  geom_line(data = sub3_5, aes(x=year, y=b, color = "e")) +
+  scale_color_manual(name = "", breaks = c("a", "b", "c", "d", "e"), 
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'), 
+                     labels = c("Perfect Management", "Perfect given FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
+  scale_x_continuous(expand = c(0,0.5)) +
+  labs(x = "Year", y = "Biomass", title = "30% HCR") +
+  theme_bw()
+
+biomass_3
+
+#Catch over time:
+catch_3 <- ggplot(sub_perf, aes(x=year, y=c)) + 
+  geom_line(aes(color = "a")) +
+  geom_line(data = sub3_fishe, aes(x=year, y=c, color = "b")) +
+  geom_line(data = sub3_1, aes(x=year, y=c, color = "c")) +
+  geom_line(data = sub3_3, aes(x=year, y=c, color = "d")) +
+  geom_line(data = sub3_5, aes(x=year, y=c, color = "e")) +
+  scale_color_manual(name = "", breaks = c("a", "b", "c", "d", "e"), 
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'), 
+                     labels = c("Perfect Management", "Perfect given FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
+  scale_x_continuous(expand = c(0,0.5)) + 
+  labs(x = "Year", y = "Catch", title = "30% HCR") + 
+  theme_bw()
+
+catch_3
+
+```
