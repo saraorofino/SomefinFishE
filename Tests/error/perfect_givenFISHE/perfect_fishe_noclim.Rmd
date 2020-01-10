@@ -160,7 +160,7 @@ col_names <- c("b", "c", "year", "f", "f_ratio", "id", "r_0", "hcr", "b_0")
 results_id <- list()
 
 #Loop to add ids to each experiment in the list - make sure the 1:xxx matches the number of lists in the results
-for(i in 1:72){
+for(i in 1:168){
   dat <- as.data.frame(matrix(unlist(results[i]), ncol = 5))
   dat$id <- i
   dat$r_0 <- rep(input_noclim[[i]]$r, 100)

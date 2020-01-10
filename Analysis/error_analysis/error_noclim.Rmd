@@ -20,6 +20,7 @@ Read in data:
 perfect <- read_csv(file=file.path(here(),"/tests/perfect_management/csv_results/perfect_noclim.csv"))
 perfect_fishe <- read_csv(file=file.path(here(),"/Results/error/perfect_fishe_noclim.csv"))
 error <- read_csv(file=file.path(here(),"/Results/error/error_noclim.csv"))
+error_hcrs <- read_csv(file=file.path(here(),"/Results/error/error_noclim_morehcrs.csv"))
 ```
 
 Want to graph biomass and catch over time for perfect, perfect given FISHE and error at the different HCRs to see which ones work
@@ -36,6 +37,18 @@ hcr25 <- perfect_fishe %>%
 hcr3 <- perfect_fishe %>% 
   filter(hcr == 0.70)
 
+hcr35 <- perfect_fishe %>% 
+  filter(hcr == 0.65)
+
+hcr4 <- perfect_fishe %>% 
+  filter(hcr == 0.6)
+
+hcr45 <- perfect_fishe %>% 
+  filter(hcr == 0.55)
+
+hcr5 <- perfect_fishe %>% 
+  filter(hcr == 0.5)
+
 #With error:
 err2 <- error %>% 
   filter(hcr == 0.80)
@@ -45,6 +58,18 @@ err25 <- error %>%
 
 err3 <- error %>% 
   filter(hcr == 0.70)
+
+err35 <- error %>% 
+  filter(hcr == 0.65)
+
+err4 <- error %>% 
+  filter(hcr == 0.60)
+
+err45 <- error %>% 
+  filter(hcr == 0.55)
+
+err5 <- error %>% 
+  filter(hcr == 0.50)
 ```
 
 ##20% Reduction 
@@ -56,17 +81,17 @@ sub_perf <- perfect %>%
 
 #perfect with fishe:
 sub_fishe <- hcr2 %>%
-  filter(id == 1)
+  filter(id == 145)
 
 #error 0.1:
 sub_1 <- err2 %>% 
-  filter(id == 1)
+  filter(id == 433)
 #error 0.3:
 sub_3 <- err2 %>% 
-  filter(id == 25)
+  filter(id == 457)
 #error 0.5:
 sub_5 <- err2 %>% 
-  filter(id == 49)
+  filter(id == 481)
 ```
 
 Graph biomass and catch over time:  
@@ -113,22 +138,22 @@ Subset for b0 = 1500 and r = 0.1; perfect management won't change so just need t
 
 #perfect with fishe:
 sub2_fishe <- hcr25 %>%
-  filter(id == 25)
+  filter(id == 121)
 
 #error 0.1:
 sub2_1 <- err25 %>% 
-  filter(id == 73)
+  filter(id == 361)
 #error 0.3:
 sub2_3 <- err25 %>% 
-  filter(id == 97)
+  filter(id == 385)
 #error 0.5:
 sub2_5 <- err25 %>% 
-  filter(id == 121) %>% 
-  filter(year < 6)
+  filter(id == 409) %>% 
+  filter(year < 16)
 ```
 
 Graph biomass and catch over time:  
-```{r biomass-graphs-20, echo=FALSE, warning=FALSE}
+```{r biomass-graphs-25, echo=FALSE, warning=FALSE}
 
 #Biomass over time:
 biomass_25 <- ggplot(sub_perf, aes(x=year, y=b, color = "a")) +
@@ -168,25 +193,26 @@ catch_25
 ##30% Reduction
 
 Subset for b0 = 1500 and r = 0.1; perfect management won't change so just need to subset for perfect given FISHE and the error tests.          
-```{r wrangle-25, include=FALSE}
+```{r wrangle-30, include=FALSE}
 
 #perfect with fishe:
 sub3_fishe <- hcr3 %>%
-  filter(id == 49)
+  filter(id == 97)
 
 #error 0.1:
 sub3_1 <- err3 %>% 
-  filter(id == 145)
+  filter(id == 289)
 #error 0.3:
 sub3_3 <- err3 %>% 
-  filter(id == 169)
+  filter(id == 313)
 #error 0.5:
 sub3_5 <- err3 %>% 
-  filter(id == 193)
+  filter(id == 337) %>% 
+  filter(year < 16)
 ```
 
 Graph biomass and catch over time:    
-```{r biomass-graphs-20, echo=FALSE, warning=FALSE}
+```{r biomass-graphs-30, echo=FALSE, warning=FALSE}
 
 #Biomass over time:
 biomass_3 <- ggplot(sub_perf, aes(x=year, y=b, color = "a")) +
@@ -221,3 +247,318 @@ catch_3 <- ggplot(sub_perf, aes(x=year, y=c)) +
 catch_3
 
 ```
+
+
+##35% Reduction
+
+Subset for b0 = 1500 and r = 0.1; perfect management won't change so just need to subset for perfect given FISHE and the error tests.          
+```{r wrangle-35, include=FALSE}
+
+#perfect with fishe:
+sub35_fishe <- hcr35 %>%
+  filter(id == 73)
+
+#error 0.1:
+sub35_1 <- err35 %>% 
+  filter(id == 217)
+#error 0.3:
+sub35_3 <- err35 %>% 
+  filter(id == 241) %>% 
+  filter(year < 6)
+#error 0.5:
+sub35_5 <- err35 %>% 
+  filter(id == 265)
+```
+
+Graph biomass and catch over time:    
+```{r biomass-graphs-35, echo=FALSE, warning=FALSE}
+
+#Biomass over time:
+biomass_35 <- ggplot(sub_perf, aes(x=year, y=b, color = "a")) +
+  geom_line() +
+  geom_line(data = sub35_fishe, aes(x=year, y=b, color = "b")) +
+  geom_line(data = sub35_1, aes(x=year, y=b, color = "c")) +
+  geom_line(data = sub35_3, aes(x=year, y=b, color = "d")) +
+  geom_line(data = sub35_5, aes(x=year, y=b, color = "e")) +
+  scale_color_manual(name = "", breaks = c("a", "b", "c", "d", "e"), 
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'), 
+                     labels = c("Perfect Management", "Perfect given FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
+  scale_x_continuous(expand = c(0,0.5)) +
+  labs(x = "Year", y = "Biomass", title = "35% HCR") +
+  theme_bw()
+
+biomass_35
+
+#Catch over time:
+catch_35 <- ggplot(sub_perf, aes(x=year, y=c)) + 
+  geom_line(aes(color = "a")) +
+  geom_line(data = sub35_fishe, aes(x=year, y=c, color = "b")) +
+  geom_line(data = sub35_1, aes(x=year, y=c, color = "c")) +
+  geom_line(data = sub35_3, aes(x=year, y=c, color = "d")) +
+  geom_line(data = sub35_5, aes(x=year, y=c, color = "e")) +
+  scale_color_manual(name = "", breaks = c("a", "b", "c", "d", "e"), 
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'), 
+                     labels = c("Perfect Management", "Perfect given FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
+  scale_x_continuous(expand = c(0,0.5)) + 
+  labs(x = "Year", y = "Catch", title = "35% HCR") + 
+  theme_bw()
+
+catch_35
+
+```
+
+##40% Reduction
+
+Subset for b0 = 1500 and r = 0.1; perfect management won't change so just need to subset for perfect given FISHE and the error tests.          
+```{r wrangle-40, include=FALSE}
+
+#perfect with fishe:
+sub4_fishe <- hcr4 %>%
+  filter(id == 49)
+
+#error 0.1:
+sub4_1 <- err4 %>% 
+  filter(id == 145)
+#error 0.3:
+sub4_3 <- err4 %>% 
+  filter(id == 169)
+#error 0.5:
+sub4_5 <- err4 %>% 
+  filter(id == 193)
+```
+
+Graph biomass and catch over time:    
+```{r biomass-graphs-40, echo=FALSE, warning=FALSE}
+
+#Biomass over time:
+biomass_4 <- ggplot(sub_perf, aes(x=year, y=b, color = "a")) +
+  geom_line() +
+  geom_line(data = sub4_fishe, aes(x=year, y=b, color = "b")) +
+  geom_line(data = sub4_1, aes(x=year, y=b, color = "c")) +
+  geom_line(data = sub4_3, aes(x=year, y=b, color = "d")) +
+  geom_line(data = sub4_5, aes(x=year, y=b, color = "e")) +
+  scale_color_manual(name = "", breaks = c("a", "b", "c", "d", "e"), 
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'), 
+                     labels = c("Perfect Management", "Perfect given FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
+  scale_x_continuous(expand = c(0,0.5)) +
+  labs(x = "Year", y = "Biomass", title = "40% HCR") +
+  theme_bw()
+
+biomass_4
+
+#Catch over time:
+catch_4 <- ggplot(sub_perf, aes(x=year, y=c)) + 
+  geom_line(aes(color = "a")) +
+  geom_line(data = sub4_fishe, aes(x=year, y=c, color = "b")) +
+  geom_line(data = sub4_1, aes(x=year, y=c, color = "c")) +
+  geom_line(data = sub4_3, aes(x=year, y=c, color = "d")) +
+  geom_line(data = sub4_5, aes(x=year, y=c, color = "e")) +
+  scale_color_manual(name = "", breaks = c("a", "b", "c", "d", "e"), 
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'), 
+                     labels = c("Perfect Management", "Perfect given FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
+  scale_x_continuous(expand = c(0,0.5)) + 
+  labs(x = "Year", y = "Catch", title = "40% HCR") + 
+  theme_bw()
+
+catch_4
+
+```
+
+##45% Reduction
+
+Subset for b0 = 1500 and r = 0.1; perfect management won't change so just need to subset for perfect given FISHE and the error tests.          
+```{r wrangle-45, include=FALSE}
+
+#perfect with fishe:
+sub45_fishe <- hcr45 %>%
+  filter(id == 25)
+
+#error 0.1:
+sub45_1 <- err45 %>% 
+  filter(id == 73)
+#error 0.3:
+sub45_3 <- err45 %>% 
+  filter(id == 97)
+#error 0.5:
+sub45_5 <- err45 %>% 
+  filter(id == 121)
+```
+
+Graph biomass and catch over time:    
+```{r biomass-graphs-45, echo=FALSE, warning=FALSE}
+
+#Biomass over time:
+biomass_45 <- ggplot(sub_perf, aes(x=year, y=b, color = "a")) +
+  geom_line() +
+  geom_line(data = sub45_fishe, aes(x=year, y=b, color = "b")) +
+  geom_line(data = sub45_1, aes(x=year, y=b, color = "c")) +
+  geom_line(data = sub45_3, aes(x=year, y=b, color = "d")) +
+  geom_line(data = sub45_5, aes(x=year, y=b, color = "e")) +
+  scale_color_manual(name = "", breaks = c("a", "b", "c", "d", "e"), 
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'), 
+                     labels = c("Perfect Management", "Perfect given FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
+  scale_x_continuous(expand = c(0,0.5)) +
+  labs(x = "Year", y = "Biomass", title = "45% HCR") +
+  theme_bw()
+
+biomass_45
+
+#Catch over time:
+catch_45 <- ggplot(sub_perf, aes(x=year, y=c)) + 
+  geom_line(aes(color = "a")) +
+  geom_line(data = sub45_fishe, aes(x=year, y=c, color = "b")) +
+  geom_line(data = sub45_1, aes(x=year, y=c, color = "c")) +
+  geom_line(data = sub45_3, aes(x=year, y=c, color = "d")) +
+  geom_line(data = sub45_5, aes(x=year, y=c, color = "e")) +
+  scale_color_manual(name = "", breaks = c("a", "b", "c", "d", "e"), 
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'), 
+                     labels = c("Perfect Management", "Perfect given FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
+  scale_x_continuous(expand = c(0,0.5)) + 
+  labs(x = "Year", y = "Catch", title = "45% HCR") + 
+  theme_bw()
+
+catch_45
+
+```
+
+##50% Reduction
+
+Subset for b0 = 1500 and r = 0.1; perfect management won't change so just need to subset for perfect given FISHE and the error tests.          
+```{r wrangle-50, include=FALSE}
+
+#perfect with fishe:
+sub5_fishe <- hcr5 %>%
+  filter(id == 1)
+
+#error 0.1:
+sub5_1 <- err5 %>% 
+  filter(id == 1)
+#error 0.3:
+sub5_3 <- err5 %>% 
+  filter(id == 25)
+#error 0.5:
+sub5_5 <- err5 %>% 
+  filter(id == 49)
+```
+
+Graph biomass and catch over time:    
+```{r biomass-graphs-50, echo=FALSE, warning=FALSE}
+
+#Biomass over time:
+biomass_5 <- ggplot(sub_perf, aes(x=year, y=b, color = "a")) +
+  geom_line() +
+  geom_line(data = sub5_fishe, aes(x=year, y=b, color = "b")) +
+  geom_line(data = sub5_1, aes(x=year, y=b, color = "c")) +
+  geom_line(data = sub5_3, aes(x=year, y=b, color = "d")) +
+  geom_line(data = sub5_5, aes(x=year, y=b, color = "e")) +
+  scale_color_manual(name = "", breaks = c("a", "b", "c", "d", "e"), 
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'), 
+                     labels = c("Perfect Management", "Perfect given FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
+  scale_x_continuous(expand = c(0,0.5)) +
+  labs(x = "Year", y = "Biomass", title = "50% HCR") +
+  theme_bw()
+
+biomass_5
+
+#Catch over time:
+catch_5 <- ggplot(sub_perf, aes(x=year, y=c)) + 
+  geom_line(aes(color = "a")) +
+  geom_line(data = sub5_fishe, aes(x=year, y=c, color = "b")) +
+  geom_line(data = sub5_1, aes(x=year, y=c, color = "c")) +
+  geom_line(data = sub5_3, aes(x=year, y=c, color = "d")) +
+  geom_line(data = sub5_5, aes(x=year, y=c, color = "e")) +
+  scale_color_manual(name = "", breaks = c("a", "b", "c", "d", "e"), 
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'), 
+                     labels = c("Perfect Management", "Perfect given FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
+  scale_x_continuous(expand = c(0,0.5)) + 
+  labs(x = "Year", y = "Catch", title = "50% HCR") + 
+  theme_bw()
+
+catch_5
+
+```
+
+
+##HCR Table
+
+Make a table with different errors as the rows and the number of simulations that went over the limit (with error) at each of the different HCRs  
+
+```{r table-wrangle}
+
+#I think I want to make two tables split by 10-30% reduction and then 35-50% reduction
+hcr_10 <- error_hcrs %>%
+  filter(hcr >= 0.7)
+hcr_35 <- error_hcrs %>%
+  filter(hcr <= 0.65)
+
+#First I'm interested in just knowing how many of the 648 fisheries were closed by year 100 at different error levels:
+##10-30%
+hcr10_100 <- hcr_10 %>% 
+  filter(year == 100) %>% 
+  mutate(closed = ifelse(f_ratio == 0, "yes", "no")) %>% 
+  group_by(hcr, error) %>% 
+  count(closed) %>% 
+  spread(key = "closed", value = "n") %>% 
+  nest(yes, no, .key = "closed") %>% 
+  pivot_wider(names_from = hcr,
+              values_from = closed) %>% 
+  unnest()
+#create a list of column names
+col_names <- c("error", "0.7yes", "0.7no", "0.75yes", "0.75no",
+               "0.8yes", "0.8no", "0.85yes", "0.85no", "0.9yes", "0.9no")
+#Rename columns:
+colnames(hcr10_100) <- col_names
+#Change NA to zero:
+hcr10_100[is.na(hcr10_100)] <- 0
+
+
+##35-50%
+hcr35_100 <- hcr_35 %>% 
+  filter(year == 100) %>% 
+  mutate(closed = ifelse(f_ratio == 0, "yes", "no")) %>% 
+  group_by(hcr, error) %>% 
+  count(closed) %>% 
+  spread(key = "closed", value = "n") %>% 
+  nest(yes, no, .key = "closed") %>% 
+  pivot_wider(names_from = hcr,
+              values_from = closed) %>% 
+  unnest()
+#create a list of column names
+col_names2 <- c("error", "0.5yes", "0.5no", "0.55yes", "0.55no",
+               "0.6yes", "0.6no", "0.65yes", "0.65no")
+#Rename columns:
+colnames(hcr35_100) <- col_names2
+#Change NA to zero:
+hcr35_100[is.na(hcr35_100)] <- 0
+
+
+
+
+# #First need to define what the failure is and group by hcr, id, and error:
+# hcr10_counts <- hcr_10 %>% 
+#   mutate(over_limit = ifelse(f_ratio_err >= 2, "yes",ifelse(f_ratio_err == 0, "close", "no"))) %>% 
+#   group_by(hcr, error) %>% 
+#   count(over_limit) %>% 
+#   spread(key = "over_limit", value = "n") %>% 
+#   nest(close, no, yes, .key = 'value_col') %>% 
+#   pivot_wider(names_from = hcr,
+#               values_from = value_col) %>% 
+#   unnest()
+# 
+# #create a list of column names
+# col_names <- c("error", "0.7close", "0.7no", "0.7yes", "0.75close", "0.75no", "0.75yes",
+#                "0.8close", "0.8no", "0.8yes", "0.85close", "0.85no", "0.85yes", "0.9close", "0.9no", "0.9yes")
+# #Rename columns:
+# colnames(hcr10_counts) <- col_names
+# #Change NA to zero:
+# hcr10_counts[is.na(hcr10_counts)] <- 0
+```
+
+
+Create the tables:  
+```{r kable}
+library(kableExtra)
+
+
+```
+
