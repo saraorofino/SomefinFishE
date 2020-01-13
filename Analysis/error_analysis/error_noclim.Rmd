@@ -21,6 +21,7 @@ perfect <- read_csv(file=file.path(here(),"/tests/perfect_management/csv_results
 perfect_fishe <- read_csv(file=file.path(here(),"/Results/error/perfect_fishe_noclim.csv"))
 error <- read_csv(file=file.path(here(),"/Results/error/error_noclim.csv"))
 error_hcrs <- read_csv(file=file.path(here(),"/Results/error/error_noclim_morehcrs.csv"))
+error_hcrs2 <- read_csv(file=file.path(here(),"/Results/error/error_noclim_morehcrs2.csv"))
 ```
 
 Want to graph biomass and catch over time for perfect, perfect given FISHE and error at the different HCRs to see which ones work
@@ -483,7 +484,7 @@ catch_5
 
 Make a table with different errors as the rows and the number of simulations that went over the limit (with error) at each of the different HCRs  
 
-```{r table-wrangle}
+```{r table-wrangle, include=FALSE, warning=FALSE, message=FALSE}
 
 #I think I want to make two tables split by 10-30% reduction and then 35-50% reduction
 hcr_10 <- error_hcrs %>%
@@ -556,9 +557,90 @@ hcr35_100[is.na(hcr35_100)] <- 0
 
 
 Create the tables:  
-```{r kable}
+```{r kable, echo=FALSE, message=FALSE, warning=FALSE}
 library(kableExtra)
 
+hcr10_table <- kable(hcr10_100, col.names = c("Error", "Yes", "No", "Yes", "No", "Yes", "No", "Yes", "No", "Yes", "No")) %>% 
+  kable_styling(bootstrap_options = c("striped", "bordered")) %>% 
+  add_header_above(c(" "= 1, "30% Reduction" = 2, "25% Reduction" = 2, "20% Reduction" = 2, "15% Reduction" = 2,
+                     "10% Reduction" = 2)) 
+hcr10_table
 
+hcr35_table <- kable(hcr35_100, col.names = c("Error", "Yes", "No", "Yes", "No", "Yes", "No", "Yes", "No")) %>% 
+  kable_styling(bootstrap_options = c("striped", "bordered")) %>% 
+  add_header_above(c(" "= 1, "50% Reduction" = 2, "45% Reduction" = 2, "40% Reduction" = 2, "35% Reduction" = 2))
+hcr35_table
 ```
+##HCR Table 2
+
+Re-ran the model to compare outcomes since error is drawn randomly  
+
+
+```{r table2-wrangle, include=FALSE, warning=FALSE, message=FALSE}
+
+#I think I want to make two tables split by 10-30% reduction and then 35-50% reduction
+hcr2_10 <- error_hcrs2 %>%
+  filter(hcr >= 0.7)
+hcr2_35 <- error_hcrs2 %>%
+  filter(hcr <= 0.65)
+
+#First I'm interested in just knowing how many of the 648 fisheries were closed by year 100 at different error levels:
+##10-30%
+hcr210_100 <- hcr2_10 %>% 
+  filter(year == 100) %>% 
+  mutate(closed = ifelse(f_ratio == 0, "yes", "no")) %>% 
+  group_by(hcr, error) %>% 
+  count(closed) %>% 
+  spread(key = "closed", value = "n") %>% 
+  nest(yes, no, .key = "closed") %>% 
+  pivot_wider(names_from = hcr,
+              values_from = closed) %>% 
+  unnest()
+#create a list of column names
+col_names <- c("error", "0.7yes", "0.7no", "0.75yes", "0.75no",
+               "0.8yes", "0.8no", "0.85yes", "0.85no", "0.9yes", "0.9no")
+#Rename columns:
+colnames(hcr210_100) <- col_names
+#Change NA to zero:
+hcr210_100[is.na(hcr210_100)] <- 0
+
+
+##35-50%
+hcr235_100 <- hcr2_35 %>% 
+  filter(year == 100) %>% 
+  mutate(closed = ifelse(f_ratio == 0, "yes", "no")) %>% 
+  group_by(hcr, error) %>% 
+  count(closed) %>% 
+  spread(key = "closed", value = "n") %>% 
+  nest(yes, no, .key = "closed") %>% 
+  pivot_wider(names_from = hcr,
+              values_from = closed) %>% 
+  unnest()
+#create a list of column names
+col_names2 <- c("error", "0.5yes", "0.5no", "0.55yes", "0.55no",
+               "0.6yes", "0.6no", "0.65yes", "0.65no")
+#Rename columns:
+colnames(hcr235_100) <- col_names2
+#Change NA to zero:
+hcr235_100[is.na(hcr235_100)] <- 0
+```
+
+
+Create the tables:  
+```{r kable2, echo=FALSE, message=FALSE, warning=FALSE}
+library(kableExtra)
+
+hcr10_table2 <- kable(hcr210_100, col.names = c("Error", "Yes", "No", "Yes", "No", "Yes", "No", "Yes", "No", "Yes", "No")) %>% 
+  kable_styling(bootstrap_options = c("striped", "bordered")) %>% 
+  add_header_above(c(" "= 1, "30% Reduction" = 2, "25% Reduction" = 2, "20% Reduction" = 2, "15% Reduction" = 2,
+                     "10% Reduction" = 2)) 
+hcr10_table2
+
+hcr35_table2 <- kable(hcr235_100, col.names = c("Error", "Yes", "No", "Yes", "No", "Yes", "No", "Yes", "No")) %>% 
+  kable_styling(bootstrap_options = c("striped", "bordered")) %>% 
+  add_header_above(c(" "= 1, "50% Reduction" = 2, "45% Reduction" = 2, "40% Reduction" = 2, "35% Reduction" = 2))
+hcr35_table2
+```
+
+Going to use the 30% reduction  
 
