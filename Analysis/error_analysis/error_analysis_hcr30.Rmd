@@ -79,11 +79,10 @@ yield_fishe_slow = sum(fishe_slow$c)
 error1_slow <- err_rep5u %>% 
   filter(id == 5) 
 error3_slow <- err_rep5u %>% 
-  filter(id == 413) %>% 
-  filter(year < 36)
+  filter(id == 413) 
 error5_slow <- err_rep5u %>% 
   filter(id == 821) %>% 
-  filter(year < 26)
+  filter(year < 71)
 
 yield_error1_slow = sum(error1_slow$c)
 yield_error3_slow = sum(error3_slow$c)
@@ -104,10 +103,11 @@ biomass_slow <- ggplot(perfect_slow, aes(x=year, y=b)) +
   geom_line(data =error1_slow, aes(x=year, y=b, color = "c")) +
   geom_line(data =error3_slow, aes(x=year, y=b, color = "d")) +
   geom_line(data =error5_slow, aes(x=year, y=b, color = "e")) +  
-  scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"), values = c('darkgreen', 'navy','firebrick4', 'firebrick4','firebrick4'),
+  scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"),
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'),
                      labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error",
                                 "FISHE with 50% Error")) +
-  scale_y_continuous(expand = c(0,0), limits = c(3000,4150), breaks = seq(3000,4100,200)) +
+  scale_y_continuous(expand = c(0,0), limits = c(2900,5450), breaks = seq(3000,5500,500)) +
   scale_x_continuous(expand = c(0,0.5)) + 
   labs(x = "Year", y = "Biomass") +
   theme_bw()
@@ -121,10 +121,11 @@ catch_slow <- ggplot(perfect_slow, aes(x=year, y=c)) +
   geom_line(data=error1_slow, aes(x=year, y=c, color = "c")) +
   geom_line(data =error3_slow, aes(x=year, y=c, color = "d")) +
   geom_line(data =error5_slow, aes(x=year, y=c, color = "e")) +  
-  scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"), values = c('darkgreen', 'navy','firebrick4', 'firebrick4', 'firebrick4'),
+  scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"),
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'),
                      labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error",
                                 "FISHE with 50% Error")) +
-  scale_y_continuous(expand = c(0,0), limits = c(100,705), breaks = seq(100,700,100)) +
+  scale_y_continuous(expand = c(0,0), limits = c(100,720), breaks = seq(100,700,100)) +
   scale_x_continuous(expand = c(0,0.5)) + 
   labs(x = "Year", y = "Catch") + 
   theme_bw()
@@ -182,11 +183,9 @@ yield_fishe_fast = sum(fishe_fast$c)
 error1_fast <- err_rep5u %>% 
   filter(id == 23)
 error3_fast <- err_rep5u %>% 
-  filter(id == 431) %>% 
-  filter(year < 21)
+  filter(id == 431)
 error5_fast <- err_rep5u %>% 
-  filter(id == 839) %>% 
-  filter(year < 76)
+  filter(id == 839) 
 
 yield_error_fast1 = sum(error1_fast$c)
 yield_error_fast3 = sum(error3_fast$c)
@@ -204,10 +203,10 @@ biomass_fast <- ggplot(perfect_fast, aes(x=year, y=b)) +
   geom_line(data = fishe_fast, aes(x=year, y=b, color = "b")) +
   geom_line(data =error1_fast, aes(x=year, y=b, color = "c")) +
   geom_line(data =error3_fast, aes(x=year, y=b, color = "d")) +
-  geom_line(data =error5_fast, aes(x=year, y=b, color = "e")) +
-  scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"), values = c('darkgreen', 'navy','firebrick4', 'firebrick4', 'firebrick4'),
-                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
-  scale_y_continuous(expand = c(0,0), limits = c(2300,4350), breaks = seq(2500,4100,500)) +
+  scale_color_manual(name = '', breaks = c("a","b", "c", "d"),
+                     values = c("darkgreen",'navy','gold2', 'darkorange2'),
+                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error")) +
+  scale_y_continuous(expand = c(0,0), limits = c(2000,5550), breaks = seq(2500,5500,500)) +
   scale_x_continuous(expand = c(0,0.5)) + 
   labs(x = "Year", y = "Biomass") +
   theme_bw()
@@ -220,10 +219,10 @@ catch_fast <- ggplot(perfect_fast, aes(x=year, y=c)) +
   geom_line(data=fishe_fast, aes(x=year, y=c, color = "b")) +
   geom_line(data=error1_fast, aes(x=year, y=c, color = "c")) +
   geom_line(data=error3_fast, aes(x=year, y=c, color = "d")) +
-  geom_line(data=error5_fast, aes(x=year, y=c, color = "e")) +
-  scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"), values = c('darkgreen', 'navy','firebrick4', 'firebrick4', 'firebrick4'),
-                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
-  scale_y_continuous(expand = c(0,0), limits = c(430,3000), breaks = seq(500,3000,500)) +
+  scale_color_manual(name = '', breaks = c("a","b", "c", "d"),
+                     values = c("darkgreen",'navy','gold2', 'darkorange2'),
+                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error")) +
+  scale_y_continuous(expand = c(0,0), limits = c(350,3000), breaks = seq(500,3000,500)) +
   scale_x_continuous(expand = c(0,0.5)) + 
   labs(x = "Year", y = "Catch") + 
   theme_bw()
