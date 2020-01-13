@@ -1,0 +1,233 @@
+---
+title: "error_analysis_hcr30"
+author: "Sara Orofino"
+date: "1/13/2020"
+output: html_document
+---
+
+#{.tabset}
+
+##Setup
+
+```{r setup, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#Packages
+library(tidyverse)
+library(here)
+library(RColorBrewer)
+
+#Data
+err_rep5u <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep5_hcr30.csv"))
+err_rep10u <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep10_hcr30.csv"))
+
+#Comparision of perfect management data
+perfect <- read_csv(file=file.path(here(),"/tests/perfect_management/csv_results/perfect.csv"))
+perfect_fishe <- read_csv(file=file.path(here(),"/Results/error/perfect_updating_rep5_hcr30.csv"))
+
+```
+
+##Cumulative Yield
+
+###Slow Growing
+Initial Conditions of Experiment:
+  - b0 = 4000
+  - r = 0.2 
+  - r_s = -0.01767
+  - error = 0.1
+
+Perfect Management: ID = 8
+Perfect given FISHE: ID = 5
+Error: ID = 5, 413, 821
+```{r error}
+#Find an error simulation at climate of -0.01767 that doesn't collapse
+err <- err_rep5u %>% 
+  filter(r_s == -0.01767) %>% 
+  filter(c != 0) %>% 
+  filter(r_0 == 0.2)
+#Use experiment 5 
+
+#Find the experiment with same r0 and r_s for 0.3 error and 0.5 error 
+err_3 <- err_rep5u %>% 
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 == 0.2) %>% 
+  filter(error == 0.3)
+#413
+err_5 <- err_rep5u %>% 
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 == 0.2) %>% 
+  filter(error == 0.5)
+#821
+```
+
+
+```{r cumulative-yield-slow, include=FALSE}
+
+#Calculate cumulative yield under perfect management
+perfect_slow <- perfect %>% 
+  filter(id == 8)
+
+yield_perfect_slow = sum(perfect_slow$c)
+
+#Calculate cumulative yield under perfect management given FISHE
+fishe_slow <- perfect_fishe %>% 
+  filter(id == 5)
+
+yield_fishe_slow = sum(fishe_slow$c)
+
+#Calculate cumulative yield in error simulations:
+error1_slow <- err_rep5u %>% 
+  filter(id == 5) 
+error3_slow <- err_rep5u %>% 
+  filter(id == 413) %>% 
+  filter(year < 36)
+error5_slow <- err_rep5u %>% 
+  filter(id == 821) %>% 
+  filter(year < 26)
+
+yield_error1_slow = sum(error1_slow$c)
+yield_error3_slow = sum(error3_slow$c)
+yield_error5_slow = sum(error5_slow$c)
+
+```
+
+
+
+
+Graph biomass and catch over time for perfect management, perfect given FISHE, and the error simulation:
+```{r biomass-graphs-slow, echo=FALSE, warning=FALSE}
+
+#Biomass over time:
+biomass_slow <- ggplot(perfect_slow, aes(x=year, y=b)) + 
+  geom_line(aes(color = "a")) + 
+  geom_line(data = fishe_slow, aes(x=year, y=b, color = "b")) +
+  geom_line(data =error1_slow, aes(x=year, y=b, color = "c")) +
+  geom_line(data =error3_slow, aes(x=year, y=b, color = "d")) +
+  geom_line(data =error5_slow, aes(x=year, y=b, color = "e")) +  
+  scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"), values = c('darkgreen', 'navy','firebrick4', 'firebrick4','firebrick4'),
+                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error",
+                                "FISHE with 50% Error")) +
+  scale_y_continuous(expand = c(0,0), limits = c(3000,4150), breaks = seq(3000,4100,200)) +
+  scale_x_continuous(expand = c(0,0.5)) + 
+  labs(x = "Year", y = "Biomass") +
+  theme_bw()
+
+biomass_slow
+
+#Catch over time:
+catch_slow <- ggplot(perfect_slow, aes(x=year, y=c)) + 
+  geom_line(aes(color = "a")) +
+  geom_line(data=fishe_slow, aes(x=year, y=c, color = "b")) +
+  geom_line(data=error1_slow, aes(x=year, y=c, color = "c")) +
+  geom_line(data =error3_slow, aes(x=year, y=c, color = "d")) +
+  geom_line(data =error5_slow, aes(x=year, y=c, color = "e")) +  
+  scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"), values = c('darkgreen', 'navy','firebrick4', 'firebrick4', 'firebrick4'),
+                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error",
+                                "FISHE with 50% Error")) +
+  scale_y_continuous(expand = c(0,0), limits = c(100,705), breaks = seq(100,700,100)) +
+  scale_x_continuous(expand = c(0,0.5)) + 
+  labs(x = "Year", y = "Catch") + 
+  theme_bw()
+
+catch_slow
+
+```
+
+###Fast Growing
+Initial Conditions of Experiment:
+  - b0 = 4000
+  - r = 0.8
+  - r_s = -0.01767
+  - error = 0.1
+  
+Perfect Management: ID = 44
+Perfect given FISHE: ID = 23
+Error: ID = 23, 
+```{r error-fast}
+#Find the right error experiment to use
+err_fast <- err_rep5u %>% 
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 == 0.8)
+#Use experiment 23
+
+#Find the experiment with same r0 and r_s for 0.3 error and 0.5 error 
+err_3f <- err_rep5u %>% 
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 == 0.8) %>% 
+  filter(error == 0.3)
+#431
+err_5f <- err_rep5u %>% 
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 == 0.8) %>% 
+  filter(error == 0.5)
+#839
+```
+
+
+```{r cumulative-yield-fast, include=FALSE}
+
+#Calculate cumulative yield under perfect management
+perfect_fast <- perfect %>% 
+  filter(id == 44)
+
+yield_perfect_fast = sum(perfect_fast$c)
+
+#Calculate cumulative yield under perfect management given FISHE
+fishe_fast <- perfect_fishe %>% 
+  filter(id == 23)
+
+yield_fishe_fast = sum(fishe_fast$c)
+
+#Calculate cumulative yield in error simulation
+error1_fast <- err_rep5u %>% 
+  filter(id == 23)
+error3_fast <- err_rep5u %>% 
+  filter(id == 431) %>% 
+  filter(year < 21)
+error5_fast <- err_rep5u %>% 
+  filter(id == 839) %>% 
+  filter(year < 76)
+
+yield_error_fast1 = sum(error1_fast$c)
+yield_error_fast3 = sum(error3_fast$c)
+yield_error_fast5 = sum(error5_fast$c)
+
+```
+
+
+Graph biomass and catch over time for perfect management, perfect given FISHE, and the error simulation:
+```{r biomass-graphs-fast, echo=FALSE, warning=FALSE}
+
+#Biomass over time:
+biomass_fast <- ggplot(perfect_fast, aes(x=year, y=b)) + 
+  geom_line(aes(color = "a")) + 
+  geom_line(data = fishe_fast, aes(x=year, y=b, color = "b")) +
+  geom_line(data =error1_fast, aes(x=year, y=b, color = "c")) +
+  geom_line(data =error3_fast, aes(x=year, y=b, color = "d")) +
+  geom_line(data =error5_fast, aes(x=year, y=b, color = "e")) +
+  scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"), values = c('darkgreen', 'navy','firebrick4', 'firebrick4', 'firebrick4'),
+                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
+  scale_y_continuous(expand = c(0,0), limits = c(2300,4350), breaks = seq(2500,4100,500)) +
+  scale_x_continuous(expand = c(0,0.5)) + 
+  labs(x = "Year", y = "Biomass") +
+  theme_bw()
+
+biomass_fast
+
+#Catch over time:
+catch_fast <- ggplot(perfect_fast, aes(x=year, y=c)) + 
+  geom_line(aes(color = "a")) +
+  geom_line(data=fishe_fast, aes(x=year, y=c, color = "b")) +
+  geom_line(data=error1_fast, aes(x=year, y=c, color = "c")) +
+  geom_line(data=error3_fast, aes(x=year, y=c, color = "d")) +
+  geom_line(data=error5_fast, aes(x=year, y=c, color = "e")) +
+  scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"), values = c('darkgreen', 'navy','firebrick4', 'firebrick4', 'firebrick4'),
+                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error", "FISHE with 50% Error")) +
+  scale_y_continuous(expand = c(0,0), limits = c(430,3000), breaks = seq(500,3000,500)) +
+  scale_x_continuous(expand = c(0,0.5)) + 
+  labs(x = "Year", y = "Catch") + 
+  theme_bw()
+
+catch_fast
+
+```
