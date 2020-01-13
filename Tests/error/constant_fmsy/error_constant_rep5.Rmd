@@ -93,7 +93,7 @@ sim_5c <- function(b, r, r_s, error, p, k, years){
        results$f[1] = 0 #Close the fishery
    } 
     if(results$f_ratio_err[1] > 1.1 & results$f_ratio_err[1] < 2){
-       results$f[1] = 0.9*f_int #Reduce by 10% - same thing as keeping 90% of previous fishing mortality
+       results$f[1] = 0.7*f_int #Reduce by 30% 
    }  
     if(results$f_ratio_err[1] > 1 & results$f_ratio_err[1] < 1.1){
        results$f[1] = f_int  #f stays the same in as last year
@@ -133,7 +133,7 @@ sim_5c <- function(b, r, r_s, error, p, k, years){
        results$f[t] = 0 
    } 
     if(results$f_ratio_err[t] > 1.1 & results$f_ratio_err[t] < 2){
-       results$f[t] = 0.9*results$f[t-1] #Reduce by 10% - same thing as keeping 90% of previous fishing mortality
+       results$f[t] = 0.7*results$f[t-1] #Reduce by 30% 
    }  
     if(results$f_ratio_err[t] > 1 & results$f_ratio_err[t] < 1.1){
        results$f[t] = results$f[t-1]  #f stays the same in as last year
@@ -215,7 +215,7 @@ for(i in 1:1224){
 ```
 
 ##Save CSV
-
+Re-saved CSV file on 1/13 after updating the HCR to 30% reduction (SO)
 ```{r save-csv}
 
 #Create the list of column names:
@@ -262,7 +262,7 @@ colnames(results_rep5c_edit) <- col_names
 #Write as CSV:
 # library(here)
 # write.csv(results_rep5c_edit,
-#           file=file.path(here(),"/Results/error/error_constant_rep5.csv"),
+#           file=file.path(here(),"/Results/error/error_constant_rep5_hcr30.csv"),
 #           row.names = FALSE)
 
 ```
