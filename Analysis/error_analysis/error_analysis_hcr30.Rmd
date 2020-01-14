@@ -22,12 +22,12 @@ err_rep5u <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep5_
 err_rep10u <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep10_hcr30.csv"))
 
 #Comparision of perfect management data
-perfect <- read_csv(file=file.path(here(),"/tests/perfect_management/csv_results/perfect.csv"))
+perfect <- read_csv(file=file.path(here(),"/tests/perfect_management/csv_results/perfect_r0.1.csv"))
 perfect_fishe <- read_csv(file=file.path(here(),"/Results/error/perfect_updating_rep5_hcr30.csv"))
 
 ```
 
-##Cumulative Yield
+##Cumulative Yield Example
 
 ###Slow Growing
 Initial Conditions of Experiment:
@@ -95,50 +95,6 @@ yield_error3_slow
 yield_error5_slow
 ```
 
-
-
-
-Graph biomass and catch over time for perfect management, perfect given FISHE, and the error simulation:
-```{r biomass-graphs-slow, echo=FALSE, warning=FALSE}
-
-#Biomass over time:
-biomass_slow <- ggplot(perfect_slow, aes(x=year, y=b)) + 
-  geom_line(aes(color = "a")) + 
-  geom_line(data = fishe_slow, aes(x=year, y=b, color = "b")) +
-  geom_line(data =error1_slow, aes(x=year, y=b, color = "c")) +
-  geom_line(data =error3_slow, aes(x=year, y=b, color = "d")) +
-  geom_line(data =error5_slow, aes(x=year, y=b, color = "e")) +  
-  scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"),
-                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'),
-                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error",
-                                "FISHE with 50% Error")) +
-  scale_y_continuous(expand = c(0,0), limits = c(2900,5450), breaks = seq(3000,5500,500)) +
-  scale_x_continuous(expand = c(0,0.5)) + 
-  labs(x = "Year", y = "Biomass") +
-  theme_bw()
-
-biomass_slow
-
-#Catch over time:
-catch_slow <- ggplot(perfect_slow, aes(x=year, y=c)) + 
-  geom_line(aes(color = "a")) +
-  geom_line(data=fishe_slow, aes(x=year, y=c, color = "b")) +
-  geom_line(data=error1_slow, aes(x=year, y=c, color = "c")) +
-  geom_line(data =error3_slow, aes(x=year, y=c, color = "d")) +
-  geom_line(data =error5_slow, aes(x=year, y=c, color = "e")) +  
-  scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"),
-                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'),
-                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error",
-                                "FISHE with 50% Error")) +
-  scale_y_continuous(expand = c(0,0), limits = c(100,720), breaks = seq(100,700,100)) +
-  scale_x_continuous(expand = c(0,0.5), breaks = seq(0,100,5)) + 
-  labs(x = "Year", y = "Catch") + 
-  theme_bw()
-
-catch_slow
-
-```
-
 ###Fast Growing
 Initial Conditions of Experiment:
   - b0 = 4000
@@ -148,7 +104,7 @@ Initial Conditions of Experiment:
   
 Perfect Management: ID = 44
 Perfect given FISHE: ID = 23
-Error: ID = 23, 
+Error: ID = 23, 431, 839  
 ```{r error-fast, include=FALSE}
 #Find the right error experiment to use
 err_fast <- err_rep5u %>% 
@@ -205,6 +161,52 @@ yield_error_fast5
 ```
 
 
+
+##Slow Comparison Graph
+
+Graph biomass and catch over time for perfect management, perfect given FISHE, and the error simulation:
+```{r biomass-graphs-slow, echo=FALSE, warning=FALSE}
+
+#Biomass over time:
+biomass_slow <- ggplot(perfect_slow, aes(x=year, y=b)) + 
+  geom_line(aes(color = "a")) + 
+  geom_line(data = fishe_slow, aes(x=year, y=b, color = "b")) +
+  geom_line(data =error1_slow, aes(x=year, y=b, color = "c")) +
+  geom_line(data =error3_slow, aes(x=year, y=b, color = "d")) +
+  geom_line(data =error5_slow, aes(x=year, y=b, color = "e")) +  
+  scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"),
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'),
+                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error",
+                                "FISHE with 50% Error")) +
+  scale_y_continuous(expand = c(0,0), limits = c(2900,5450), breaks = seq(3000,5500,500)) +
+  scale_x_continuous(expand = c(0,0.5)) + 
+  labs(x = "Year", y = "Biomass") +
+  theme_bw()
+
+biomass_slow
+
+#Catch over time:
+catch_slow <- ggplot(perfect_slow, aes(x=year, y=c)) + 
+  geom_line(aes(color = "a")) +
+  geom_line(data=fishe_slow, aes(x=year, y=c, color = "b")) +
+  geom_line(data=error1_slow, aes(x=year, y=c, color = "c")) +
+  geom_line(data =error3_slow, aes(x=year, y=c, color = "d")) +
+  geom_line(data =error5_slow, aes(x=year, y=c, color = "e")) +  
+  scale_color_manual(name = '', breaks = c("a","b", "c", "d", "e"),
+                     values = c("darkgreen",'navy','gold2', 'darkorange2', 'firebrick4'),
+                     labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error",
+                                "FISHE with 50% Error")) +
+  scale_y_continuous(expand = c(0,0), limits = c(100,720), breaks = seq(100,700,100)) +
+  scale_x_continuous(expand = c(0,0.5), breaks = seq(0,100,5)) + 
+  labs(x = "Year", y = "Catch") + 
+  theme_bw()
+
+catch_slow
+
+```
+
+##Fast Comparison Graph
+
 Graph biomass and catch over time for perfect management, perfect given FISHE, and the error simulation:
 ```{r biomass-graphs-fast, echo=FALSE, warning=FALSE}
 
@@ -241,3 +243,295 @@ catch_fast <- ggplot(perfect_fast, aes(x=year, y=c)) +
 catch_fast
 
 ```
+
+
+##Aggregated Cumulative Yields
+
+Cumulative yield patterns for slow and fast show that catch is highest under perfect management and decreases from there in the order we expect (perfect given FISHE, 10% error, 30% error, 50% error)  
+
+Going to try calculating cumulative yields under the most aggressive climate change decline by aggregating slow growing (r = 0.1-0.3), intermediate (r=0.4-0.5), and fast growing (r=0.6-0.8). For now I'm including all three starting biomasses.  
+
+
+###Slow Growing
+
+Defining slow growing as having growth rates between 0.1 and 0.3. Find cumulative yields for perfect, perfect given FISHE, and the three error scenarios  
+  
+Steps:  
+  - Filter for climate change r_s = -0.01767  
+  - Filter for growth rates less than 0.3  
+  - Group by Id and calculate cumulative yield (sum of catch for that experiment)  
+  - Find the average catch for all the experiments  
+
+```{r slow-yield-calcs, include=FALSE}
+
+#Perfect management:
+slow_perfect <- perfect %>% 
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 <= 0.3) %>% 
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c))
+
+#Perfect given FISHE:
+slow_fishe <- perfect_fishe %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 <= 0.3) %>% 
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c))
+
+#10% error:
+slow_1 <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 <= 0.3) %>% 
+  filter(error == 0.1) %>% 
+  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c)) 
+
+#30% error:
+slow_3 <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 <= 0.3) %>% 
+  filter(error == 0.3) %>% 
+  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c))
+
+#50% error:
+slow_5 <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 <= 0.3) %>% 
+  filter(error == 0.5) %>% 
+  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c)) 
+
+##Calculate average catch:
+avg_perf_slow <- mean(slow_perfect$cumulative_yield)
+avg_fishe_slow <- mean(slow_fishe$cumulative_yield)
+avg_slow1 <- mean(slow_1$cumulative_yield)
+avg_slow3 <- mean(slow_3$cumulative_yield)
+avg_slow5 <- mean(slow_5$cumulative_yield)
+
+
+##Turn those numbers into a dataframe so you can make a table:
+error <- c(0.1, 0.3, 0.5)
+sims_s <- c(avg_slow1, avg_slow3, avg_slow5)
+
+yield_slow <- data.frame(error = error, perfect = rep(avg_perf_slow, 3), perfect_fishe = rep(avg_fishe_slow, 3),
+                         fishe_sims = sims_s) %>% 
+  mutate(percent_perfect = (fishe_sims / perfect_fishe) * 100) #Note this is how close the simulations get to perfect given FISHE
+
+
+
+##Alternative way to make the table:
+yield_slow2 <- data.frame(perfect = avg_perf_slow, perfect_fishe = avg_fishe_slow, error_0.1 = avg_slow1,
+                          error_0.3 = avg_slow3, error_0.5 = avg_slow5) 
+
+#Need to calculate the percent of perfect for all the columns:
+percent_perf <- 100
+percent_perf_fishe <- (yield_slow2$perfect_fishe/yield_slow2$perfect) * 100
+#note these are calcuting the percent of perfect given FISHE since that's as good as it can possibly be
+percent_perf_s0.1 <- (yield_slow2$error_0.1/yield_slow2$perfect_fishe) * 100
+percent_perf_s0.3 <- (yield_slow2$error_0.3/yield_slow2$perfect_fishe) * 100
+percent_perf_s0.5 <- (yield_slow2$error_0.5/yield_slow2$perfect_fishe) * 100
+
+#Add the row to the dataframe:
+yield_slow2 <- add_row(yield_slow2, perfect = percent_perf, perfect_fishe = percent_perf_fishe, error_0.1 = percent_perf_s0.1,
+        error_0.3 = percent_perf_s0.3, error_0.5 = percent_perf_s0.5)
+
+#Add row names:
+row.names(yield_slow2) = c("cumulative_yield", "percent_perfect")
+```
+NOTE: There's a pretty big difference in the percent of perfect between keeping only simulations that don't fail by year 100 and keeping all simulations. Right now the numbers are only for simulations that don't fail by year 100, which are lower than the numbers including all the simulations (since some of them have at least some catch before they fail it skews the average up)   
+
+Make a formal table:  
+
+
+###Intermediate Growing
+
+Defining intermediate growing as having growth rates between 0.4 and 0.5. Find cumulative yields for perfect, perfect given FISHE, and the three error scenarios    
+  
+Steps:  
+  - Filter for climate change r_s = -0.01767  
+  - Filter for growth rates between 0.4 and 0.5    
+  - Group by Id and calculate cumulative yield (sum of catch for that experiment)  
+  - Find the average catch for all the experiments 
+  
+```{r int-yield-calcs, include=FALSE}
+
+#Perfect management:
+int_perfect <- perfect %>% 
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 > 0.3 & r_0 <= 0.5) %>% 
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c))
+
+#Perfect given FISHE:
+int_fishe <- perfect_fishe %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 > 0.3 & r_0 <= 0.5) %>% 
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c))
+
+#10% error:
+int_1 <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 > 0.3 & r_0 <= 0.5) %>% 
+  filter(error == 0.1) %>% 
+  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c))
+
+#30% error:
+int_3 <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 > 0.3 & r_0 <= 0.5) %>% 
+  filter(error == 0.3) %>% 
+  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c))
+
+#50% error:
+int_5 <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 > 0.3 & r_0 <= 0.5) %>% 
+  filter(error == 0.5) %>% 
+  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c))
+
+##Calculate average catch:
+avg_perf_int <- mean(int_perfect$cumulative_yield)
+avg_fishe_int <- mean(int_fishe$cumulative_yield)
+avg_int1 <- mean(int_1$cumulative_yield)
+avg_int3 <- mean(int_3$cumulative_yield)
+avg_int5 <- mean(int_5$cumulative_yield)
+
+
+##Turn those numbers into a dataframe so you can make a table:
+error <- c(0.1, 0.3, 0.5)
+sims_i <- c(avg_int1, avg_int3, avg_int5)
+
+yield_int <- data.frame(error = error, perfect = rep(avg_perf_int, 3), perfect_fishe = rep(avg_fishe_int, 3),
+                         fishe_sims = sims_i) %>% 
+  mutate(percent_perfect = (fishe_sims / perfect_fishe) * 100) #Note this is how close the simulations get to perfect given FISHE
+
+
+
+##Alternative way to make the table:
+yield_int2 <- data.frame(perfect = avg_perf_int, perfect_fishe = avg_fishe_int, error_0.1 = avg_int1,
+                          error_0.3 = avg_int3, error_0.5 = avg_int5) 
+
+#Need to calculate the percent of perfect for all the columns:
+percent_perf <- 100
+percent_perf_fishe_i <- (yield_int2$perfect_fishe/yield_int2$perfect) * 100
+#note these are calcuting the percent of perfect given FISHE since that's as good as it can possibly be
+percent_perf_i0.1 <- (yield_int2$error_0.1/yield_int2$perfect_fishe) * 100
+percent_perf_i0.3 <- (yield_int2$error_0.3/yield_int2$perfect_fishe) * 100
+percent_perf_i0.5 <- (yield_int2$error_0.5/yield_int2$perfect_fishe) * 100
+
+#Add the row to the dataframe:
+yield_int2 <- add_row(yield_int2, perfect = percent_perf, perfect_fishe = percent_perf_fishe_i, error_0.1 = percent_perf_i0.1,
+        error_0.3 = percent_perf_i0.3, error_0.5 = percent_perf_i0.5)
+
+#Add row names:
+row.names(yield_int2) = c("cumulative_yield", "percent_perfect")
+```
+
+Make a formal table:  
+
+
+
+###Fast Growing
+
+Defining fast growing as having growth rates of 0.6 or greater. Find cumulative yields for perfect, perfect given FISHE, and the three error scenarios      
+  
+Steps:  
+  - Filter for climate change r_s = -0.01767  
+  - Filter for growth rates greater than 0.6      
+  - Group by Id and calculate cumulative yield (sum of catch for that experiment)  
+  - Find the average catch for all the experiments 
+  
+```{r fast-yield-calcs, include=FALSE}
+
+#Perfect management:
+fast_perfect <- perfect %>% 
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 >= 0.6) %>% 
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c))
+
+#Perfect given FISHE:
+fast_fishe <- perfect_fishe %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 >= 0.6) %>% 
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c))
+
+#10% error:
+fast_1 <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 >= 0.6) %>% 
+  filter(error == 0.1) %>% 
+  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c)) 
+
+#30% error:
+fast_3 <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 >= 0.6) %>% 
+  filter(error == 0.3) %>% 
+  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c)) 
+
+#50% error:
+fast_5 <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 >= 0.6) %>% 
+  filter(error == 0.5) %>% 
+  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c))
+
+##Calculate average catch:
+avg_perf_fast <- mean(fast_perfect$cumulative_yield)
+avg_fishe_fast <- mean(fast_fishe$cumulative_yield)
+avg_fast1 <- mean(fast_1$cumulative_yield)
+avg_fast3 <- mean(fast_3$cumulative_yield)
+avg_fast5 <- mean(fast_5$cumulative_yield)
+
+
+##Turn those numbers into a dataframe so you can make a table:
+error <- c(0.1, 0.3, 0.5)
+sims_f <- c(avg_fast1, avg_fast3, avg_fast5)
+
+yield_fast <- data.frame(error = error, perfect = rep(avg_perf_fast, 3), perfect_fishe = rep(avg_fishe_fast, 3),
+                         fishe_sims = sims_f) %>% 
+  mutate(percent_perfect = (fishe_sims / perfect_fishe) * 100) #Note this is how close the simulations get to perfect given FISHE
+
+
+
+##Alternative way to make the table:
+yield_fast2 <- data.frame(perfect = avg_perf_fast, perfect_fishe = avg_fishe_fast, error_0.1 = avg_fast1,
+                          error_0.3 = avg_fast3, error_0.5 = avg_fast5) 
+
+#Need to calculate the percent of perfect for all the columns:
+percent_perf <- 100
+percent_perf_fishe_f <- (yield_fast2$perfect_fishe/yield_fast2$perfect) * 100
+#note these are calcuting the percent of perfect given FISHE since that's as good as it can possibly be
+percent_perf_f0.1 <- (yield_fast2$error_0.1/yield_fast2$perfect_fishe) * 100
+percent_perf_f0.3 <- (yield_fast2$error_0.3/yield_fast2$perfect_fishe) * 100
+percent_perf_f0.5 <- (yield_fast2$error_0.5/yield_fast2$perfect_fishe) * 100
+
+#Add the row to the dataframe:
+yield_int2 <- add_row(yield_fast2, perfect = percent_perf, perfect_fishe = percent_perf_fishe_f, error_0.1 = percent_perf_f0.1,
+        error_0.3 = percent_perf_f0.3, error_0.5 = percent_perf_f0.5)
+
+#Add row names:
+row.names(yield_fast2) = c("cumulative_yield", "percent_perfect")
+```
+
+Make a formal table:  
+
