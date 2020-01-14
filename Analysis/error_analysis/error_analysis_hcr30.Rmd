@@ -39,7 +39,7 @@ Initial Conditions of Experiment:
 Perfect Management: ID = 8
 Perfect given FISHE: ID = 5
 Error: ID = 5, 413, 821
-```{r error}
+```{r error, include=FALSE}
 #Find an error simulation at climate of -0.01767 that doesn't collapse
 err <- err_rep5u %>% 
   filter(r_s == -0.01767) %>% 
@@ -61,19 +61,21 @@ err_5 <- err_rep5u %>%
 ```
 
 
-```{r cumulative-yield-slow, include=FALSE}
+```{r cumulative-yield-slow, echo=FALSE}
 
 #Calculate cumulative yield under perfect management
 perfect_slow <- perfect %>% 
   filter(id == 8)
 
 yield_perfect_slow = sum(perfect_slow$c)
+yield_perfect_slow
 
 #Calculate cumulative yield under perfect management given FISHE
 fishe_slow <- perfect_fishe %>% 
   filter(id == 5)
 
 yield_fishe_slow = sum(fishe_slow$c)
+yield_fishe_slow
 
 #Calculate cumulative yield in error simulations:
 error1_slow <- err_rep5u %>% 
@@ -88,6 +90,9 @@ yield_error1_slow = sum(error1_slow$c)
 yield_error3_slow = sum(error3_slow$c)
 yield_error5_slow = sum(error5_slow$c)
 
+yield_error1_slow
+yield_error3_slow
+yield_error5_slow
 ```
 
 
@@ -126,7 +131,7 @@ catch_slow <- ggplot(perfect_slow, aes(x=year, y=c)) +
                      labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error",
                                 "FISHE with 50% Error")) +
   scale_y_continuous(expand = c(0,0), limits = c(100,720), breaks = seq(100,700,100)) +
-  scale_x_continuous(expand = c(0,0.5)) + 
+  scale_x_continuous(expand = c(0,0.5), breaks = seq(0,100,5)) + 
   labs(x = "Year", y = "Catch") + 
   theme_bw()
 
@@ -144,7 +149,7 @@ Initial Conditions of Experiment:
 Perfect Management: ID = 44
 Perfect given FISHE: ID = 23
 Error: ID = 23, 
-```{r error-fast}
+```{r error-fast, include=FALSE}
 #Find the right error experiment to use
 err_fast <- err_rep5u %>% 
   filter(r_s == -0.01767) %>% 
@@ -165,19 +170,21 @@ err_5f <- err_rep5u %>%
 ```
 
 
-```{r cumulative-yield-fast, include=FALSE}
+```{r cumulative-yield-fast, echo=FALSE}
 
 #Calculate cumulative yield under perfect management
 perfect_fast <- perfect %>% 
   filter(id == 44)
 
 yield_perfect_fast = sum(perfect_fast$c)
+yield_perfect_fast
 
 #Calculate cumulative yield under perfect management given FISHE
 fishe_fast <- perfect_fishe %>% 
   filter(id == 23)
 
 yield_fishe_fast = sum(fishe_fast$c)
+yield_fishe_fast
 
 #Calculate cumulative yield in error simulation
 error1_fast <- err_rep5u %>% 
@@ -190,6 +197,10 @@ error5_fast <- err_rep5u %>%
 yield_error_fast1 = sum(error1_fast$c)
 yield_error_fast3 = sum(error3_fast$c)
 yield_error_fast5 = sum(error5_fast$c)
+
+yield_error_fast1
+yield_error_fast3
+yield_error_fast5
 
 ```
 
@@ -223,7 +234,7 @@ catch_fast <- ggplot(perfect_fast, aes(x=year, y=c)) +
                      values = c("darkgreen",'navy','gold2', 'darkorange2'),
                      labels = c("Perfect Management", "Perfect with FISHE", "FISHE with 10% Error", "FISHE with 30% Error")) +
   scale_y_continuous(expand = c(0,0), limits = c(350,3000), breaks = seq(500,3000,500)) +
-  scale_x_continuous(expand = c(0,0.5)) + 
+  scale_x_continuous(expand = c(0,0.5), breaks = seq(0,100,5)) + 
   labs(x = "Year", y = "Catch") + 
   theme_bw()
 
