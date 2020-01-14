@@ -80,6 +80,18 @@ input_perfect <- list_perfect %>%
   cross()
 
 
+#Another experiment with r by 0.1 instead of 0.05:
+list_perfect <- list(
+  b = c(1500, 4000, 6000),
+  r = seq(0.1, .8, .1),
+  r_s = seq(-0.01767, 0.01623, 0.002), 
+  p = 0.2,
+  k = 10000,
+  years = 100
+)
+
+input_perfect <- list_perfect %>%
+  cross()
 ```
 
 
@@ -98,6 +110,12 @@ for(i in 1:765){
                              k=input_perfect[[i]]$k,years=input_perfect[[i]]$years)
 }
 
+#Experiment with r by 0.1:
+for(i in 1:408){
+  results[[i]] <- sim_perfect(b=input_perfect[[i]]$b, r=input_perfect[[i]]$r,
+                             r_s=input_perfect[[i]]$r_s, p=input_perfect[[i]]$p,
+                             k=input_perfect[[i]]$k,years=input_perfect[[i]]$years)
+}
 ```
 
 ##Save CSV
@@ -118,6 +136,15 @@ for(i in 1:765){
   results_id[[i]] <- dat
 }
 
+#for r by 0.1
+for(i in 1:408){
+  dat <- as.data.frame(matrix(unlist(results[i]), ncol = 5))
+  dat$id <- i
+  dat$r_0 <- rep(input_perfect[[i]]$r, 100)
+  dat$r_s <- rep(input_perfect[[i]]$r_s, 100)
+  results_id[[i]] <- dat
+}
+
 #Bind all the experiments together
 results_perfect <- bind_rows(results_id)
 
@@ -125,8 +152,11 @@ results_perfect <- bind_rows(results_id)
 colnames(results_perfect) <- col_names
 
 #Write as CSV:
-library(here)
-write.csv(results_perfect, file=file.path(here(),"/FISHE_tests/perfect_management/csv_results/perfect.csv"),
-          row.names = FALSE)
+# library(here)
+# write.csv(results_perfect, file=file.path(here(),"/FISHE_tests/perfect_management/csv_results/perfect.csv"),
+#           row.names = FALSE)
+
+# write.csv(results_perfect, file=file.path(here(),"/Tests/perfect_management/csv_results/perfect_r0.1.csv"),
+#           row.names = FALSE)
 
 ```
