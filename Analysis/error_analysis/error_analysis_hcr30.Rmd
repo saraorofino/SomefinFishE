@@ -20,6 +20,9 @@ library(RColorBrewer)
 #Data
 err_rep5u <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep5_hcr30.csv"))
 err_rep10u <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep10_hcr30.csv"))
+err_rep5c <- read_csv(file=file.path(here(),"/Results/error/error_constant_rep5_hcr30.csv"))
+err_rep10c <- read_csv(file=file.path(here(),"/Results/error/error_constant_rep10_hcr30.csv"))
+
 
 #Comparision of perfect management data
 perfect <- read_csv(file=file.path(here(),"/tests/perfect_management/csv_results/perfect_r0.1.csv"))
@@ -262,6 +265,7 @@ Steps:
   - Group by Id and calculate cumulative yield (sum of catch for that experiment)  
   - Find the average catch for all the experiments  
 
+UPDATING FMSY:  
 ```{r slow-yield-calcs, include=FALSE}
 
 #Perfect management:
@@ -282,8 +286,7 @@ slow_fishe <- perfect_fishe %>%
 slow_1 <- err_rep5u %>%
   filter(r_s == -0.01767) %>% 
   filter(r_0 <= 0.3) %>% 
-  filter(error == 0.1) %>% 
-  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
+  filter(error == 0.1) %>%
   group_by(id) %>% 
   summarize(cumulative_yield = sum(c)) 
 
@@ -292,7 +295,6 @@ slow_3 <- err_rep5u %>%
   filter(r_s == -0.01767) %>% 
   filter(r_0 <= 0.3) %>% 
   filter(error == 0.3) %>% 
-  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
   group_by(id) %>% 
   summarize(cumulative_yield = sum(c))
 
@@ -301,7 +303,6 @@ slow_5 <- err_rep5u %>%
   filter(r_s == -0.01767) %>% 
   filter(r_0 <= 0.3) %>% 
   filter(error == 0.5) %>% 
-  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
   group_by(id) %>% 
   summarize(cumulative_yield = sum(c)) 
 
@@ -342,7 +343,9 @@ yield_slow2 <- add_row(yield_slow2, perfect = percent_perf, perfect_fishe = perc
 #Add row names:
 row.names(yield_slow2) = c("cumulative_yield", "percent_perfect")
 ```
-NOTE: There's a pretty big difference in the percent of perfect between keeping only simulations that don't fail by year 100 and keeping all simulations. Right now the numbers are only for simulations that don't fail by year 100, which are lower than the numbers including all the simulations (since some of them have at least some catch before they fail it skews the average up)   
+
+CONSTANT FMSY:  
+
 
 Make a formal table:  
 
