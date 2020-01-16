@@ -16,7 +16,6 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(here)
 library(RColorBrewer)
-library(data.table)
 
 #Data
 err_rep5u <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep5_hcr30.csv"))
@@ -495,7 +494,7 @@ slow5c_badavg <- mean(slow5c_bad$prop_bad)
 #Add column of prop_bad to the dataframe:
 yield_slowc$percent_bad <- c(slow1c_badavg, slow3c_badavg, slow5c_badavg)
 ```
-This dataframe (yield_slowc) indicates that the fisheries get closer to perfect when they don't update their estimates of fmsy. That doesn't make sense with what I would expect, although this could be because this average includes all the runs and not just the ones that made it to year 100. If the fishery is fishing way too high they will have high culumulative yields but they may have collapsed the fishery before the end of the simulation. To check this I will try and add a column that shows percent of bad outcomes as well.  
+  
 
 
 Make a formal table:  
@@ -568,6 +567,57 @@ yield_int <- data.frame(error = error, perfect = rep(avg_perf_int, 3), perfect_f
   mutate(percent_perfect = (fishe_sims / perfect_fishe) * 100) #Note this is how close the simulations get to perfect given FISHE
 
 
+##Calculate the number of "bad outcomes" and the proportion of bad outcomes
+#Assessment years:
+assess_5 <- seq(5,100,5)
+
+int1_bad <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 > 0.3 & r_0 <= 0.5) %>% 
+  filter(error == 0.1) %>%  
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5u" = n) %>% 
+  spread(key = "correct_decision", value = "count_5u") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_bad = (fail + no) / total_decisions) 
+
+int1_badavg <- mean(int1_bad$prop_bad)
+
+
+int3_bad <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 > 0.3 & r_0 <= 0.5) %>% 
+  filter(error == 0.3) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5u" = n) %>% 
+  spread(key = "correct_decision", value = "count_5u") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_bad = (fail + no) / total_decisions) 
+int3_badavg <- mean(int3_bad$prop_bad)
+
+int5_bad <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 > 0.3 & r_0 <= 0.5) %>% 
+  filter(error == 0.5) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5u" = n) %>% 
+  spread(key = "correct_decision", value = "count_5u") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_bad = (fail + no) / total_decisions) 
+int5_badavg <- mean(int5_bad$prop_bad)
+
+#Add column of prop_bad to the dataframe:
+yield_int$percent_bad <- c(int1_badavg, int3_badavg, int5_badavg)
+
 
 ##Alternative way to make the table:
 yield_int2 <- data.frame(perfect = avg_perf_int, perfect_fishe = avg_fishe_int, error_0.1 = avg_int1,
@@ -591,7 +641,109 @@ row.names(yield_int2) = c("cumulative_yield", "percent_perfect")
 
 Make a formal table:  
 
+CONSTANT FMSY:  
+It's important to compare these updating fmsy results to the constant fmsy results since that seemed really important in other experiments  
+Note: I only copied the code for the first type of table but I can easily do the second type of table if that's the preferred one  
 
+```{r int-yield-calcs-fmsyconstant, include=FALSE}
+#Perfect management won't change because it includes updating fmsy as the condition for perfect management
+
+#Perfect given FISHE also doesn't change (I could change the code but I don't think that makes sense in the context of perfect)
+
+#10% error:
+int_1c <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 > 0.3 & r_0 <= 0.5) %>% 
+  filter(error == 0.1) %>%
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c)) 
+
+#30% error:
+int_3c <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 > 0.3 & r_0 <= 0.5) %>% 
+  filter(error == 0.3) %>% 
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c))
+
+#50% error:
+int_5c <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 > 0.3 & r_0 <= 0.5) %>% 
+  filter(error == 0.5) %>% 
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c)) 
+
+##Calculate average catch:
+avg_perf_int <- mean(int_perfect$cumulative_yield)
+avg_fishe_int <- mean(int_fishe$cumulative_yield)
+avg_int1c <- mean(int_1c$cumulative_yield)
+avg_int3c <- mean(int_3c$cumulative_yield)
+avg_int5c <- mean(int_5c$cumulative_yield)
+
+
+##Turn those numbers into a dataframe so you can make a table:
+error <- c(0.1, 0.3, 0.5)
+sims_s <- c(avg_int1c, avg_int3c, avg_int5c)
+
+yield_intc <- data.frame(error = error, perfect = rep(avg_perf_slow, 3), perfect_fishe = rep(avg_fishe_slow, 3),
+                         fishe_sims = sims_s) %>% 
+  mutate(percent_perfect = (fishe_sims / perfect_fishe) * 100) #Note this is how close the simulations get to perfect given FISHE
+
+##Calculate the number of "bad outcomes" and the proportion of bad outcomes
+#Assessment years:
+assess_5 <- seq(5,100,5)
+
+
+int1c_bad <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 > 0.3 & r_0 <= 0.5) %>% 
+  filter(error == 0.1) %>%  
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5c" = n) %>% 
+  spread(key = "correct_decision", value = "count_5c") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_bad = (fail + no) / total_decisions) 
+
+int1c_badavg <- mean(int1c_bad$prop_bad)
+
+
+int3c_bad <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 > 0.3 & r_0 <= 0.5) %>% 
+  filter(error == 0.3) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5c" = n) %>% 
+  spread(key = "correct_decision", value = "count_5c") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_bad = (fail + no) / total_decisions) 
+
+int3c_badavg <- mean(int3c_bad$prop_bad)
+
+int5c_bad <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 > 0.3 & r_0 <= 0.5) %>% 
+  filter(error == 0.5) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5c" = n) %>% 
+  spread(key = "correct_decision", value = "count_5c") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_bad = (fail + no) / total_decisions) 
+
+int5c_badavg <- mean(int5c_bad$prop_bad)
+
+#Add column of prop_bad to the dataframe:
+yield_intc$percent_bad <- c(int1c_badavg, int3c_badavg, int5c_badavg)
+```
 
 ###Fast Growing
 
@@ -659,6 +811,58 @@ yield_fast <- data.frame(error = error, perfect = rep(avg_perf_fast, 3), perfect
                          fishe_sims = sims_f) %>% 
   mutate(percent_perfect = (fishe_sims / perfect_fishe) * 100) #Note this is how close the simulations get to perfect given FISHE
 
+##Calculate the number of "bad outcomes" and the proportion of bad outcomes
+#Assessment years:
+assess_5 <- seq(5,100,5)
+
+fast1_bad <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 >= 0.6) %>% 
+  filter(error == 0.1) %>%  
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5u" = n) %>% 
+  spread(key = "correct_decision", value = "count_5u") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(total_decisions = sum(yes + no)) %>% 
+  mutate(prop_bad =  no / total_decisions) 
+
+fast1_badavg <- mean(fast1_bad$prop_bad)
+
+
+fast3_bad <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 >= 0.6) %>% 
+  filter(error == 0.3) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5u" = n) %>% 
+  spread(key = "correct_decision", value = "count_5u") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_bad = (fail + no) / total_decisions) 
+
+fast3_badavg <- mean(fast3_bad$prop_bad)
+
+fast5_bad <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 >= 0.6) %>% 
+  filter(error == 0.5) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5u" = n) %>% 
+  spread(key = "correct_decision", value = "count_5u") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_bad = (fail + no) / total_decisions) 
+
+fast5_badavg <- mean(fast5_bad$prop_bad)
+
+#Add column of prop_bad to the dataframe:
+yield_fast$percent_bad <- c(fast1_badavg, fast3_badavg, fast5_badavg)
 
 
 ##Alternative way to make the table:
@@ -683,3 +887,106 @@ row.names(yield_fast2) = c("cumulative_yield", "percent_perfect")
 
 Make a formal table:  
 
+CONSTANT FMSY:  
+It's important to compare these updating fmsy results to the constant fmsy results since that seemed really important in other experiments  
+Note: I only copied the code for the first type of table but I can easily do the second type of table if that's the preferred one  
+
+```{r fast-yield-calcs-fmsyconstant, include=FALSE}
+#Perfect management won't change because it includes updating fmsy as the condition for perfect management
+
+#Perfect given FISHE also doesn't change (I could change the code but I don't think that makes sense in the context of perfect)
+
+#10% error:
+fast_1c <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 >= 0.6) %>% 
+  filter(error == 0.1) %>% 
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c)) 
+
+#30% error:
+fast_3c <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 >= 0.6) %>% 
+  filter(error == 0.3) %>% 
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c)) 
+
+#50% error:
+fast_5c <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 >= 0.6) %>% 
+  filter(error == 0.5) %>% 
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c))
+
+##Calculate average catch:
+avg_perf_fast <- mean(fast_perfect$cumulative_yield)
+avg_fishe_fast <- mean(fast_fishe$cumulative_yield)
+avg_fast1c <- mean(fast_1c$cumulative_yield)
+avg_fast3c <- mean(fast_3c$cumulative_yield)
+avg_fast5c <- mean(fast_5c$cumulative_yield)
+
+
+##Turn those numbers into a dataframe so you can make a table:
+error <- c(0.1, 0.3, 0.5)
+sims_f <- c(avg_fast1c, avg_fast3c, avg_fast5c)
+
+yield_fastc <- data.frame(error = error, perfect = rep(avg_perf_fast, 3), perfect_fishe = rep(avg_fishe_fast, 3),
+                         fishe_sims = sims_f) %>% 
+  mutate(percent_perfect = (fishe_sims / perfect_fishe) * 100)
+
+
+##Calculate the number of "bad outcomes" and the proportion of bad outcomes
+#Assessment years:
+assess_5 <- seq(5,100,5)
+
+fast1c_bad <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 >= 0.6) %>% 
+  filter(error == 0.1) %>%  
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5c" = n) %>% 
+  spread(key = "correct_decision", value = "count_5c") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(total_decisions = sum(yes + no)) %>% 
+  mutate(prop_bad =  no / total_decisions) 
+
+fast1c_badavg <- mean(fast1c_bad$prop_bad)
+
+
+fast3c_bad <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 >= 0.6) %>% 
+  filter(error == 0.3) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5c" = n) %>% 
+  spread(key = "correct_decision", value = "count_5c") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_bad = (fail + no) / total_decisions) 
+
+fast3c_badavg <- mean(fast3c_bad$prop_bad)
+
+fast5c_bad <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 >= 0.6) %>% 
+  filter(error == 0.5) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5c" = n) %>% 
+  spread(key = "correct_decision", value = "count_5c") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_bad = (fail + no) / total_decisions) 
+
+fast5c_badavg <- mean(fast5c_bad$prop_bad)
+
+#Add column of prop_bad to the dataframe:
+yield_fastc$percent_bad <- c(fast1c_badavg, fast3c_badavg, fast5c_badavg)
+```
