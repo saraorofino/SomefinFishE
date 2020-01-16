@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(here)
 library(RColorBrewer)
+library(data.table)
 
 #Data
 err_rep5u <- read_csv(file=file.path(here(),"/Results/error/error_updating_rep5_hcr30.csv"))
@@ -25,7 +26,7 @@ err_rep10c <- read_csv(file=file.path(here(),"/Results/error/error_constant_rep1
 
 
 #Comparision of perfect management data
-perfect <- read_csv(file=file.path(here(),"/tests/perfect_management/csv_results/perfect_r0.1.csv"))
+perfect <- read_csv(file=file.path(here(),"/Tests/perfect_management/csv_results/perfect_r0.1.csv"))
 perfect_fishe <- read_csv(file=file.path(here(),"/Results/error/perfect_updating_rep5_hcr30.csv"))
 
 ```
