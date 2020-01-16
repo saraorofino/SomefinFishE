@@ -1,0 +1,248 @@
+---
+title: "analysis"
+author: "Chase"
+date: "1/14/2020"
+output: html_document
+---
+```{r}
+library(tidyverse)
+```
+
+
+```{r}
+hcr_rep5c <- read_csv(file=file.path(here(),"/Results/hcrs/hcrs_constantfmsy_5rep.csv"))
+hcr_rep5u <- read_csv(file=file.path(here(),"/Results/hcrs/hcrs_updatingfmsy_5rep.csv"))
+hcr_rep10c <- read_csv(file=file.path(here(),"/Results/hcrs/hcrs_constantfmsy_10rep.csv"))
+hcr_rep10u <- read_csv(file=file.path(here(),"/Results/hcrs/hcrs_updatingfmsy_10rep.csv"))
+```
+
+```{r data_wrangling}
+
+hcr_rep5c <- hcr_rep5c %>%
+  mutate(over_limit = ifelse(f_ratio >= 2, "yes",ifelse(f_ratio == 0, "close", "no"))) %>% 
+  group_by(hcr)
+
+hcr_rep5u <- hcr_rep5u %>% 
+  mutate(over_limit = ifelse(f_ratio >= 2, "yes",ifelse(f_ratio == 0, "close", "no"))) %>% 
+  group_by(hcr)
+  
+hcr_rep10c <- hcr_rep10c %>% 
+  mutate(over_limit = ifelse(f_ratio >= 2, "yes",ifelse(f_ratio == 0, "close", "no"))) %>% 
+  group_by(hcr)
+  
+hcr_rep10u <- hcr_rep10u %>% 
+  mutate(over_limit = ifelse(f_ratio >= 2, "yes",ifelse(f_ratio == 0, "close", "no"))) %>% 
+  group_by(hcr) 
+
+counts_rep5c <- hcr_rep5c %>%
+  count(over_limit) %>% 
+  spread(key = "over_limit", value = "n") %>%
+  mutate(prop_over_limit = yes/(yes + no)) %>% 
+  mutate(years_active = yes + no) %>%
+  mutate(years_closed = close) %>% 
+  mutate(total_years = years_active + years_closed)
+
+counts_rep5u <- hcr_rep5u %>% 
+  count(over_limit) %>% 
+  spread(key = "over_limit", value = "n") %>%
+  mutate(prop_over_limit = yes/(yes + no)) %>% 
+  mutate(years_active = yes + no) %>%
+  mutate(years_closed = close) %>% 
+  mutate(total_years = years_active + years_closed)
+
+counts_rep10c <- hcr_rep10c %>% 
+  count(over_limit) %>% 
+  spread(key = "over_limit", value = "n") %>%
+  mutate(prop_over_limit = yes/(yes + no)) %>% 
+  mutate(years_active = yes + no) %>%
+  mutate(years_closed = close) %>% 
+  mutate(total_years = years_active + years_closed)
+
+counts_rep10u <- hcr_rep10u %>% 
+  count(over_limit) %>% 
+  spread(key = "over_limit", value = "n") %>%
+  mutate(prop_over_limit = yes/(yes + no)) %>% 
+  mutate(years_active = yes + no) %>%
+  mutate(years_closed = close) %>% 
+  mutate(total_years = years_active + years_closed)
+```
+
+```{r}
+hcr_rep5c_le <- read_csv(file=file.path(here(),"/Results/hcrs/hcrs_constantfmsy_5rep_lowerror.csv"))
+hcr_rep5u_le <- read_csv(file=file.path(here(),"/Results/hcrs/hcrs_updatingfmsy_5rep_lowerror.csv"))
+hcr_rep10c_le <- read_csv(file=file.path(here(),"/Results/hcrs/hcrs_constantfmsy_10rep_lowerror.csv"))
+hcr_rep10u_le <- read_csv(file=file.path(here(),"/Results/hcrs/hcrs_updatingfmsy_10rep_lowerror.csv"))
+
+rep5c <- hcr_rep5c_le %>% 
+  filter(year == 100) %>% 
+  mutate(status = ifelse(f_ratio == 0, "closed", ifelse(b <= 1000, "over", "good"))) %>% 
+  mutate(growth = ifelse(r_0 <= .3, "slow", ifelse(r_0 > .3 & r_0 <= .5, "medium", "fast")))
+
+rep5u <- hcr_rep5u_le %>% 
+  filter(year == 100) %>% 
+  mutate(status = ifelse(f_ratio == 0, "closed", ifelse(b <= 1000, "over", "good"))) %>% 
+  mutate(growth = ifelse(r_0 <= .3, "slow", ifelse(r_0 > .3 & r_0 <= .5, "medium", "fast")))
+
+rep10c <- hcr_rep10c_le %>% 
+  filter(year == 100) %>% 
+  mutate(status = ifelse(f_ratio == 0, "closed", ifelse(b <= 1000, "over", "good"))) %>% 
+  mutate(growth = ifelse(r_0 <= .3, "slow", ifelse(r_0 > .3 & r_0 <= .5, "medium", "fast")))
+  
+rep10u <- hcr_rep10u_le %>% 
+  filter(year == 100) %>% 
+  mutate(status = ifelse(f_ratio == 0, "closed", ifelse(b <= 1000, "over", "good"))) %>% 
+  mutate(growth = ifelse(r_0 <= .3, "slow", ifelse(r_0 > .3 & r_0 <= .5, "medium", "fast")))
+
+rep5c_c <- rep5c %>%
+  group_by(hcr, growth) %>% 
+  count(status) %>% 
+  spread(key = "status", value = "n") %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(prop_bad = (over + closed)/(over + good + closed))
+
+rep5u_c <- rep5u %>%
+  group_by(hcr, growth) %>% 
+  count(status) %>% 
+  spread(key = "status", value = "n") %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(prop_bad = (closed)/(good + closed))
+
+rep10c_c <- rep10c %>%
+  group_by(hcr, growth) %>% 
+  count(status) %>% 
+  spread(key = "status", value = "n") %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(prop_bad = (over + closed)/(over + good + closed))
+
+rep10u_c <- rep10u %>%
+  group_by(hcr, growth) %>% 
+  count(status) %>% 
+  spread(key = "status", value = "n") %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(prop_bad = (closed)/(good + closed))
+```
+
+```{r}
+hcr_range_0 <- read_csv(file=file.path(here(),"/Results/range_shifts/hcrs/range_hcr_0rep.csv"))
+hcr_range_5 <- read_csv(file=file.path(here(),"/Results/range_shifts/hcrs/range_hcr_5rep.csv"))
+hcr_range_10 <- read_csv(file=file.path(here(),"/Results/range_shifts/hcrs/range_hcr_10rep.csv"))
+hcr_range_15 <- read_csv(file=file.path(here(),"/Results/range_shifts/hcrs/range_hcr_15rep.csv"))
+hcr_range_20 <- read_csv(file=file.path(here(),"/Results/range_shifts/hcrs/range_hcr_20rep.csv"))
+hcr_range_ey <- read_csv(file=file.path(here(),"/Results/range_shifts/hcrs/range_hcr_everyyear.csv"))
+hcr_range_5_notac <- read_csv(file=file.path(here(), "/Results/range_shifts/hcrs/range_hcr_5rep_notac.csv"))
+```
+
+```{r}
+
+range0 <- hcr_range_0 %>% 
+  filter(year == 100) %>%
+  mutate(boverk = b/k) %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(status = ifelse(f_ratio == 0, "closed", ifelse(boverk <= .1, "over", "good"))) %>% 
+  mutate(growth = ifelse(r_0 <= .3, "slow", ifelse(r_0 > .3 & r_0 <= .5, "medium", "fast")))
+  
+
+range5 <- hcr_range_5 %>% 
+  filter(year == 100) %>%
+  mutate(boverk = b/k) %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>%  
+  mutate(status = ifelse(f_ratio == 0, "closed", ifelse(boverk <= .1, "over", "good"))) %>% 
+  mutate(growth = ifelse(r_0 <= .3, "slow", ifelse(r_0 > .3 & r_0 <= .5, "medium", "fast")))
+
+range10 <- hcr_range_10 %>% 
+  filter(year == 100) %>%
+  mutate(boverk = b/k) %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(status = ifelse(f_ratio == 0, "closed", ifelse(boverk <= .1, "over", "good"))) %>% 
+  mutate(growth = ifelse(r_0 <= .3, "slow", ifelse(r_0 > .3 & r_0 <= .5, "medium", "fast")))
+
+range15 <- hcr_range_15 %>% 
+  filter(year == 100) %>% 
+  mutate(boverk = b/k) %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(status = ifelse(f_ratio == 0, "closed", ifelse(boverk <= .1, "over", "good"))) %>% 
+  mutate(growth = ifelse(r_0 <= .3, "slow", ifelse(r_0 > .3 & r_0 <= .5, "medium", "fast")))
+
+range20 <- hcr_range_20 %>% 
+  filter(year == 100) %>%
+  mutate(boverk = b/k) %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(status = ifelse(f_ratio == 0, "closed", ifelse(boverk <= .1, "over", "good"))) %>% 
+  mutate(growth = ifelse(r_0 <= .3, "slow", ifelse(r_0 > .3 & r_0 <= .5, "medium", "fast")))
+
+rangeEY <- hcr_range_ey %>% 
+  filter(year == 100) %>% 
+  mutate(boverk = b/k) %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>%
+  mutate(status = ifelse(f_ratio == 0, "closed", ifelse(boverk <= .1, "over", "good"))) %>% 
+  mutate(growth = ifelse(r_0 <= .3, "slow", ifelse(r_0 > .3 & r_0 <= .5, "medium", "fast")))
+
+
+range0_c <- range0 %>%
+  group_by(hcr, growth) %>% 
+  count(status) %>% 
+  spread(key = "status", value = "n") %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(prop_bad = (over)/(good + over))
+
+range5_c <- range5 %>%
+  group_by(hcr, growth) %>% 
+  count(status) %>% 
+  spread(key = "status", value = "n") %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(prop_bad = (over + closed)/(over + good + closed))
+
+range10_c <- range10 %>%
+  group_by(hcr, growth) %>% 
+  count(status) %>% 
+  spread(key = "status", value = "n") %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(prop_bad = (over + closed)/(over + good + closed))
+
+range15_c <- range15 %>%
+  group_by(hcr, growth) %>% 
+  count(status) %>% 
+  spread(key = "status", value = "n") %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(prop_bad = (over + closed)/(good + closed + over))
+
+range15_c <- range15 %>%
+  group_by(hcr, growth) %>% 
+  count(status) %>% 
+  spread(key = "status", value = "n") %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(prop_bad = (over + closed)/(good + closed + over))
+
+range20_c <- range20 %>%
+  group_by(hcr, growth) %>% 
+  count(status) %>% 
+  spread(key = "status", value = "n") %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(prop_bad = (closed + over)/(good + closed + over))
+
+rangeEY_c <- rangeEY %>%
+  group_by(hcr, growth) %>% 
+  count(status) %>% 
+  spread(key = "status", value = "n") %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(prop_bad = (closed)/(closed + good))
+
+```
+
+```{r}
+hcr_range_ey <- read_csv(file=file.path(here(),"/Results/range_shifts/hcrs/range_hcr_everyyear.csv"))
+hcr_range_5_notac <- read_csv(file=file.path(here(), "/Results/range_shifts/hcrs/range_hcr_5rep_notac.csv"))
+
+rangeEY <- hcr_range_ey %>% 
+  filter(year == 100) %>% 
+  mutate(status = ifelse(f_ratio == 0, "closed", ifelse(b <= 1000, "over", "good")))
+
+rangeEY_c <- rangeEY %>%
+  group_by(hcr) %>% 
+  count(status) %>% 
+  spread(key = "status", value = "n") %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(prop_bad = (over)/(good + over))
+
+```
+

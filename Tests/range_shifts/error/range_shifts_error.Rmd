@@ -203,7 +203,7 @@ Create the experiment input list:
 list_range <- list(
   b = c(1500, 4000, 6000),
   r = seq(0.1, .8, .1),
-  k_s = seq(-0.045, -0.0001, 0.003),
+  k_s = seq(-0.0281, -0.0001, 0.0005),
   error = c(0.1, 0.3, 0.5),
   p = 0.2,
   k = 10000,
@@ -213,8 +213,6 @@ list_range <- list(
 
 input_range <- list_range %>%
   cross()
-
-
 ```
 
 
@@ -227,7 +225,7 @@ results = list()
 
 #Run the model over the input lists:
 
-for(i in 1:1080){
+for(i in 1:4104){
   results[[i]] <- sim_range(b=input_range[[i]]$b, r=input_range[[i]]$r,
                              k_s=input_range[[i]]$k_s, p=input_range[[i]]$p,
                              k=input_range[[i]]$k,years=input_range[[i]]$years, 
@@ -247,7 +245,7 @@ col_names <- c("b", "c", "year", "r", "f", "f_msy", "f_ratio", "f_ratio_p", "f_r
 results_id <- list()
 
 #Loop to add ids to each experiment in the list - make sure the 1:xxx matches the number of lists in the results
-for(i in 1:1080){
+for(i in 1:4104){
   dat <- as.data.frame(matrix(unlist(results[i]), ncol = 10))
   dat$id <- i
   dat$r_0 <- rep(input_range[[i]]$r, 100)
@@ -265,7 +263,7 @@ colnames(results_range) <- col_names
 
 #Write as CSV:
 library(here)
-write.csv(results_range, file=file.path(here(),"/Results/range_shifts/error/range_error_20rep.csv"),
+write.csv(results_range, file=file.path(here(),"/Results/range_shifts/error/range_error_5rep.csv"),
             row.names = FALSE)
 
 ```
