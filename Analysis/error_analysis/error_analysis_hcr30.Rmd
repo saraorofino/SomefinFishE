@@ -265,8 +265,9 @@ Steps:
   - Group by Id and calculate cumulative yield (sum of catch for that experiment)  
   - Find the average catch for all the experiments  
 
-UPDATING FMSY:  
-```{r slow-yield-calcs, include=FALSE}
+UPDATING FMSY: 
+
+```{r slow-yield-calcs-fmsyupdating, include=FALSE}
 
 #Perfect management:
 slow_perfect <- perfect %>% 
@@ -323,8 +324,58 @@ yield_slow <- data.frame(error = error, perfect = rep(avg_perf_slow, 3), perfect
   mutate(percent_perfect = (fishe_sims / perfect_fishe) * 100) #Note this is how close the simulations get to perfect given FISHE
 
 
+##Calculate the number of "bad outcomes" and the proportion of bad outcomes
+#Assessment years:
+assess_5 <- seq(5,100,5)
 
-##Alternative way to make the table:
+slow1_bad <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 <= 0.3) %>% 
+  filter(error == 0.1) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5u" = n) %>% 
+  spread(key = "correct_decision", value = "count_5u") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_bad = (fail + no) / total_decisions) 
+
+slow1_badavg <- mean(slow1_bad$prop_bad)
+
+
+slow3_bad <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 <= 0.3) %>% 
+  filter(error == 0.3) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5u" = n) %>% 
+  spread(key = "correct_decision", value = "count_5u") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_bad = (fail + no) / total_decisions) 
+slow3_badavg <- mean(slow3_bad$prop_bad)
+
+slow5_bad <- err_rep5u %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 <= 0.3) %>% 
+  filter(error == 0.5) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5u" = n) %>% 
+  spread(key = "correct_decision", value = "count_5u") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_bad = (fail + no) / total_decisions) 
+slow5_badavg <- mean(slow5_bad$prop_bad)
+
+#Add column of prop_bad to the dataframe:
+yield_slow$percent_bad <- c(slow1_badavg, slow3_badavg, slow5_badavg)
+
+###Alternative way to make the table:
 yield_slow2 <- data.frame(perfect = avg_perf_slow, perfect_fishe = avg_fishe_slow, error_0.1 = avg_slow1,
                           error_0.3 = avg_slow3, error_0.5 = avg_slow5) 
 
@@ -345,6 +396,105 @@ row.names(yield_slow2) = c("cumulative_yield", "percent_perfect")
 ```
 
 CONSTANT FMSY:  
+It's important to compare these updating fmsy results to the constant fmsy results since that seemed really important in other experiments  
+Note: I only copied the code for the first type of table but I can easily do the second type of table if that's the preferred one  
+
+```{r slow-yield-calcs-fmsyconstant, include=FALSE}
+#Perfect management won't change because it includes updating fmsy as the condition for perfect management
+
+#Perfect given FISHE also doesn't change (I could change the code but I don't think that makes sense in the context of perfect)
+
+#10% error:
+slow_1c <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 <= 0.3) %>% 
+  filter(error == 0.1) %>%
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c)) 
+
+#30% error:
+slow_3c <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 <= 0.3) %>% 
+  filter(error == 0.3) %>% 
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c))
+
+#50% error:
+slow_5c <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 <= 0.3) %>% 
+  filter(error == 0.5) %>% 
+  group_by(id) %>% 
+  summarize(cumulative_yield = sum(c)) 
+
+##Calculate average catch:
+avg_perf_slow <- mean(slow_perfect$cumulative_yield)
+avg_fishe_slow <- mean(slow_fishe$cumulative_yield)
+avg_slow1c <- mean(slow_1c$cumulative_yield)
+avg_slow3c <- mean(slow_3c$cumulative_yield)
+avg_slow5c <- mean(slow_5c$cumulative_yield)
+
+
+##Turn those numbers into a dataframe so you can make a table:
+error <- c(0.1, 0.3, 0.5)
+sims_s <- c(avg_slow1c, avg_slow3c, avg_slow5c)
+
+yield_slowc <- data.frame(error = error, perfect = rep(avg_perf_slow, 3), perfect_fishe = rep(avg_fishe_slow, 3),
+                         fishe_sims = sims_s) %>% 
+  mutate(percent_perfect = (fishe_sims / perfect_fishe) * 100) #Note this is how close the simulations get to perfect given FISHE
+
+##Calculate the number of "bad outcomes" and the proportion of bad outcomes
+#Assessment years:
+assess_5 <- seq(5,100,5)
+
+slow1c_bad <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 <= 0.3) %>% 
+  filter(error == 0.1) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5c" = n) %>% 
+  spread(key = "correct_decision", value = "count_5c") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>%
+  mutate(total_decisions = sum(yes + no)) %>% 
+  mutate(prop_bad = no / total_decisions) 
+slow1c_badavg <- mean(slow1c_bad$prop_bad)
+
+
+slow3c_bad <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 <= 0.3) %>% 
+  filter(error == 0.3) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5c" = n) %>% 
+  spread(key = "correct_decision", value = "count_5c") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_bad = (fail + no) / total_decisions) 
+slow3c_badavg <- mean(slow3c_bad$prop_bad)
+
+slow5c_bad <- err_rep5c %>%
+  filter(r_s == -0.01767) %>% 
+  filter(r_0 <= 0.3) %>% 
+  filter(error == 0.5) %>% 
+  filter(year == 1 | year %in% assess_5) %>% 
+  group_by(id, correct_decision) %>% 
+  tally() %>% 
+  rename("count_5c" = n) %>% 
+  spread(key = "correct_decision", value = "count_5c") %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  mutate(total_decisions = sum(yes + no + fail)) %>% 
+  mutate(prop_bad = (fail + no) / total_decisions) 
+slow5c_badavg <- mean(slow5c_bad$prop_bad)
+
+#Add column of prop_bad to the dataframe:
+yield_slowc$percent_bad <- c(slow1c_badavg, slow3c_badavg, slow5c_badavg)
+```
+This dataframe (yield_slowc) indicates that the fisheries get closer to perfect when they don't update their estimates of fmsy. That doesn't make sense with what I would expect, although this could be because this average includes all the runs and not just the ones that made it to year 100. If the fishery is fishing way too high they will have high culumulative yields but they may have collapsed the fishery before the end of the simulation. To check this I will try and add a column that shows percent of bad outcomes as well.  
 
 
 Make a formal table:  
@@ -381,7 +531,6 @@ int_1 <- err_rep5u %>%
   filter(r_s == -0.01767) %>% 
   filter(r_0 > 0.3 & r_0 <= 0.5) %>% 
   filter(error == 0.1) %>% 
-  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
   group_by(id) %>% 
   summarize(cumulative_yield = sum(c))
 
@@ -390,7 +539,6 @@ int_3 <- err_rep5u %>%
   filter(r_s == -0.01767) %>% 
   filter(r_0 > 0.3 & r_0 <= 0.5) %>% 
   filter(error == 0.3) %>% 
-  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
   group_by(id) %>% 
   summarize(cumulative_yield = sum(c))
 
@@ -399,7 +547,6 @@ int_5 <- err_rep5u %>%
   filter(r_s == -0.01767) %>% 
   filter(r_0 > 0.3 & r_0 <= 0.5) %>% 
   filter(error == 0.5) %>% 
-  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
   group_by(id) %>% 
   summarize(cumulative_yield = sum(c))
 
@@ -476,7 +623,6 @@ fast_1 <- err_rep5u %>%
   filter(r_s == -0.01767) %>% 
   filter(r_0 >= 0.6) %>% 
   filter(error == 0.1) %>% 
-  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
   group_by(id) %>% 
   summarize(cumulative_yield = sum(c)) 
 
@@ -485,7 +631,6 @@ fast_3 <- err_rep5u %>%
   filter(r_s == -0.01767) %>% 
   filter(r_0 >= 0.6) %>% 
   filter(error == 0.3) %>% 
-  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
   group_by(id) %>% 
   summarize(cumulative_yield = sum(c)) 
 
@@ -494,7 +639,6 @@ fast_5 <- err_rep5u %>%
   filter(r_s == -0.01767) %>% 
   filter(r_0 >= 0.6) %>% 
   filter(error == 0.5) %>% 
-  filter(year == 100 & c!= 0) %>% #filter out experiments that don't make it to the end
   group_by(id) %>% 
   summarize(cumulative_yield = sum(c))
 

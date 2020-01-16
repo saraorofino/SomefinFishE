@@ -67,7 +67,7 @@ sim_5c <- function(b, r, r_s, error, p, k, years){
   results <- data.frame(
     b = rep(NA, years), c = rep(NA, years), 
     year = 1:years, r = rep(NA, years), f = rep(NA, years),
-    f_msy = rep(NA, years), f_ratio = rep(NA, years), f_ratio_err = rep(NA, years)) #Setup the results dataframe 
+    f_msy = rep(NA, years), f_ratio = rep(NA, years), f_ratio_p = rep(NA, years), f_ratio_err = rep(NA, years)) #Setup the results dataframe 
   
   #Set the initial result for the outputs in year 1
   results$b[1] = b
@@ -79,9 +79,10 @@ sim_5c <- function(b, r, r_s, error, p, k, years){
   r_calc1 <- results$r[1]
   results$f_msy[1] <- fmsy(r=r_calc1, p=p) #calculate fmsy in year 1 based on historical parameters
   results$f_ratio[1] = f_int/results$f_msy[1] #calculate the actual f_ratio from initial fishing pressure
+  results$f_ratio_p[1] = results$f_ratio[1] #this is the perceived f ratio by the fisheries managers
 
   #Log transform the mean (m) and stdev (s):
-  mu_1 <- log(results$f_ratio[1]) 
+  mu_1 <- log(results$f_ratio_p[1]) 
   cv <- error
   sd_1 <- sqrt(log(cv^2+1))
   
@@ -117,14 +118,15 @@ sim_5c <- function(b, r, r_s, error, p, k, years){
     r_calc2 <- results$r[1]
     results$f_msy[t] <- fmsy(r=r_calc2, p=p)
     results$f_ratio[t] <- results$f[t-1]/results$f_msy[t-1] #the ratio of f/fmsy at the beginning of the year is based on last years f and fmsy
+    results$f_ratio_p[t] <- results$f[t-1]/results$f_msy[1] #the perceived f ratio is based on the original fmsy from the first assessment
 
     #Transform to new mean (mu) if f_ratio is greater than 0:
-    if(results$f_ratio[t] != 0){
-       mu_2 <- log(results$f_ratio[t])
+    if(results$f_ratio_p[t] != 0){
+       mu_2 <- log(results$f_ratio_p[t])
        #Draw the f_ratio_err
        results$f_ratio_err[t] <- rlnorm(1, meanlog = mu_2, sdlog = sd_1)
     }
-    if(results$f_ratio[t] == 0){
+    if(results$f_ratio_p[t] == 0){
        results$f_ratio_err[t] = 0
     }
     
@@ -152,9 +154,11 @@ sim_5c <- function(b, r, r_s, error, p, k, years){
     results$b[t] = results$b[t-1] + (results$r[t-1] / p)*results$b[t-1]*(1 - ((results$b[t-1]/k) ^ p))-results$c[t-1]
     results$f[t] = results$f[t-1]
     results$c[t] = results$f[t] * results$b[t]
-    results$f_msy[t] = results$f_msy[t-1]
+    r_calc3 <- results$r[t]
+    results$f_msy[t] = fmsy(r=r_calc3, p=p) #Fmsy needs to update every year to capture productivity changes
     results$f_ratio_err[t] = results$f_ratio_err[t-1]
-    results$f_ratio[t] = results$f_ratio[t-1]
+    results$f_ratio[t] = results$f[t-1]/results$f_msy[t-1]
+    results$f_ratio_p[t] = results$f_ratio_p[t-1]
     
   }
 }
